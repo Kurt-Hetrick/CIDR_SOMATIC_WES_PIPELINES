@@ -75,18 +75,18 @@ START_EXTRACT_BARCODES=$(date '+%s') # capture time process starts for wall cloc
 
 # if exit does not equal 0 then exit with whatever the exit signal is at the end.
 # also write to file that this job failed
-  #JOB_NAME, USER and SGE_STDERR_PATH are internal variables to the cluster environment
-		if
-			[ "$SCRIPT_STATUS" -ne 0 ]
-		then
-			echo ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-			>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
-			exit ${SCRIPT_STATUS}
-		fi
+
+	if
+		[ "${SCRIPT_STATUS}" -ne 0 ]
+	then
+		echo ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
+		exit ${SCRIPT_STATUS}
+	fi
 
 END_EXTRACT_BARCODES=$(date '+%s')
 
-#After running these jobs, print to a command line file for tracking.
+# write wall clock times to file
 
 	echo ${LANE},${PROJECT},D.XTRACT.BARCODES,${HOSTNAME},${START_EXTRACT_BARCODES},${END_EXTRACT_BARCODES} \
 	>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/${LANE}.${PROJECT}.WALL.CLOCK.TIMES.csv

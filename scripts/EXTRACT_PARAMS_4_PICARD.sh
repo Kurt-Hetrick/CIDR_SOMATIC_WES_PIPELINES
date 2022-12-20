@@ -91,8 +91,10 @@ END_EXTRACT_BARCODES=$(date '+%s') # capture time process stops for wall clock t
 	echo ${LANE},${PROJECT},D.XTRACT.BCL2SAM,${HOSTNAME},${START_EXTRACT_BARCODES},${END_EXTRACT_BARCODES} \
 	>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/${LANE}.${PROJECT}.WALL.CLOCK.TIMES.csv
 
-echo Project ended at $(date) \
->> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/DEMUX_${LANE}_START_END_TIMESTAMP.txt
+# write timestamp process ended to file
+
+	echo Project ended at $(date) \
+	>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/DEMUX_${LANE}_START_END_TIMESTAMP.txt
 
 # exit with the signal from the program
 
