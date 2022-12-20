@@ -24,73 +24,76 @@
 
 # INPUT VARIABLES
 
-	JAVA_1_8=$1
-	PICARD_DIR=$2
-	FGBIO_DIR=$3
-	CORE_PATH=$4
-	RUN_FOLDER=$5
-	PROJECT=$6
-	LANE=$7
-	SAMPLE_SHEET=$8
+	UMI_CONTAINER=$1
+
+	CORE_PATH=$2
+	RUN_FOLDER=$3 # what is this used for?
+	PROJECT=$4
+	LANE=$5
+	SAMPLE_SHEET=$6
 		SAMPLE_SHEET_NAME=$(basename ${SAMPLE_SHEET} .csv)
-	SUBMIT_STAMP=$9
-	READ_STRUCTURE=${10}
-	FCID=${11}
-	RUN_FOLDER_NAME=${12}
-	# example: 146T8B9M8B146T
-	RUN_SPLIT=`echo ${RUN_FOLDER_NAME} | awk '{split($0,runbc,"_"); print runbc[2]":"runbc[3]":"}'`
-	RUN_BARCODE=${RUN_SPLIT}${FCID}
-	#Illumina style sample sheet...Maybe we can extract one from the CSS version
-	IEM_SAMPLESHEET=${13}
+	SUBMIT_STAMP=$7
+	READ_STRUCTURE=$8 # example: 146T8B9M8B146T
+	FCID=$9
+	RUN_FOLDER_NAME=${10}
+		RUN_SPLIT=$(echo ${RUN_FOLDER_NAME} \
+				| awk '{split($0,runbc,"_"); print runbc[2]":"runbc[3]":"}')
+		RUN_BARCODE=${RUN_SPLIT}${FCID}
+	IEM_SAMPLESHEET=${11} #Illumina style sample sheet...Maybe we can extract one from the CSS version
 
-START_EXTRACT_BARCODES=`date '+%s'`
+START_EXTRACT_BARCODES=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
-echo Project started at `date` >> ${CORE_PATH}/${PROJECT}"/DEMUX_UMAP/REPORTS/DEMUX_"${LANE}"_START_END_TIMESTAMP.txt"
+	echo Project started at $(date) \
+	>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/DEMUX_${LANE}_START_END_TIMESTAMP.txt
 
-	# FIRST Extract barcode calling parameters from the Illumina Experiment Manager (IEM) style sample sheet.
-	# The format of this sample sheet is a traditional illumina style header with run and analysis parameters.
-	# The [DATA] header could be filled from a CIDR LIMS and currently is expecting a lane, sample id, sample name, index, index2 and project column set
-	# The sample id and sample name are currently our Platform unit (PU) which is FCID_LANE_INDEX-INDEX2.
-	# Sample ID is used for naming the downstream fastq files generated from Illumina's bcl2fastq2 application.
-	# Sample Name is used by this pipeline in later steps by picards ExtractIlluminaBarcodes.
-    # http://fulcrumgenomics.github.io/fgbio/tools/latest/ExtractBasecallingParamsForPicard.html
-	${JAVA_1_8}/java -Xmx10g -jar ${FGBIO_DIR}/fgbio-0.8.0.jar ExtractBasecallingParamsForPicard \
-		--input=${IEM_SAMPLESHEET} \
-		--bam=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/RG_UMAP_BAMS/ \
-		--output=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID}/ \
-		--lanes ${LANE} \
-		
-	# check the exit signal at this point.
+# FIRST Extract barcode calling parameters from the Illumina Experiment Manager (IEM) style sample sheet.
+# The format of this sample sheet is a traditional illumina style header with run and analysis parameters.
+# The [DATA] header could be filled from a CIDR LIMS and currently is expecting a lane, sample id, sample name, index, index2 and project column set
+# The sample id and sample name are currently our Platform unit (PU) which is FCID_LANE_INDEX-INDEX2.
+# Sample ID is used for naming the downstream fastq files generated from Illumina's bcl2fastq2 application.
+# Sample Name is used by this pipeline in later steps by picards ExtractIlluminaBarcodes.
+# http://fulcrumgenomics.github.io/fgbio/tools/latest/ExtractBasecallingParamsForPicard.html
 
-		SCRIPT_STATUS=`echo $?`
+	CMD="singularity exec ${UMI_CONTAINER} java -jar"
+		CMD=${CMD}" -Xmx10g"
+		CMD=${CMD}" /fgbio/fgbio.jar"
+	CMD=${CMD}" ExtractBasecallingParamsForPicard"
+		CMD=${CMD}" --input=${IEM_SAMPLESHEET}"
+		CMD=${CMD}" --bam=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/RG_UMAP_BAMS/"
+		CMD=${CMD}" --lanes ${LANE}"
+	CMD=${CMD}" --output=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID}/"
 
-	# if exit does not equal 0 then exit with whatever the exit signal is at the end.
-	# also write to file that this job failed
+# write command line to file and execute the command line
 
-			if [ "$SCRIPT_STATUS" -ne 0 ]
-			 then
-				echo $HOSTNAME ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-				>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/TEMP/${SAMPLE_SHEET_NAME}"_"${SUBMIT_STAMP}"_ERRORS.csv"
-				exit ${SCRIPT_STATUS}
-			fi
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT}/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT}/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
+	echo ${CMD} | bash
 
-END_EXTRACT_BARCODES=`date '+%s'`
+# check the exit signal at this point.
 
-HOSTNAME=`hostname`
+	SCRIPT_STATUS=$(echo $?)
 
-echo ${LANE}","${PROJECT}",D.XTRACT.BCL2SAM,"$HOSTNAME","${START_EXTRACT_BARCODES}","${END_EXTRACT_BARCODES} \
->> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/${LANE}"."${PROJECT}".WALL.CLOCK.TIMES.csv"
+# if exit does not equal 0 then exit with whatever the exit signal is at the end.
+# also write to file that this job failed
 
-	${JAVA_1_8}/java -Xmx10g -jar ${FGBIO_DIR}/fgbio-0.8.0.jar ExtractBasecallingParamsForPicard \
-		--input=${IEM_SAMPLESHEET} \
-		--bam${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/RG_UMAP_BAMS/ \
-		--output=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID}/ \
-		--lanes ${LANE}  >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${LANE}".COMMAND.LINES.txt"
+	if
+		[ "${SCRIPT_STATUS}" -ne 0 ]
+	then
+		echo ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+		>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
+		exit ${SCRIPT_STATUS}
+	fi
 
-echo >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${LANE}".COMMAND.LINES.txt"
+END_EXTRACT_BARCODES=$(date '+%s') # capture time process stops for wall clock tracking purposes.
 
-# if file is not present exit !=0
+# write wall clock times to file
 
-ls ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID}/"barcode_params."${LANE}".txt"
+	echo ${LANE},${PROJECT},D.XTRACT.BCL2SAM,${HOSTNAME},${START_EXTRACT_BARCODES},${END_EXTRACT_BARCODES} \
+	>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/${LANE}.${PROJECT}.WALL.CLOCK.TIMES.csv
 
-echo Project ended at `date` >> ${CORE_PATH}/${PROJECT}"/DEMUX_UMAP/REPORTS/DEMUX_"${LANE}"_START_END_TIMESTAMP.txt"
+echo Project ended at $(date) \
+>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/DEMUX_${LANE}_START_END_TIMESTAMP.txt
+
+# exit with the signal from the program
+
+	exit ${SCRIPT_STATUS}
