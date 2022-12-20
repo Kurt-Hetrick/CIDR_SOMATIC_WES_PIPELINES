@@ -38,7 +38,12 @@
 
 	# used for tracking in the read group header of the cram file
 
-		PIPELINE_VERSION=$(git --git-dir=${SUBMITTER_SCRIPT_PATH}/.git --work-tree=${SUBMITTER_SCRIPT_PATH} log --pretty=format:'%h' -n 1)
+		PIPELINE_VERSION=$(git \
+			--git-dir=${SUBMITTER_SCRIPT_PATH}/.git \
+			--work-tree=${SUBMITTER_SCRIPT_PATH} \
+			log \
+				--pretty=format:'%h' \
+				-n 1)
 
 	# load gcc for programs like verifyBamID
 	## this will get pushed out to all of the compute nodes since I specify env var to pushed out with qsub
@@ -78,17 +83,21 @@
 		# start in current working directory
 		# transfer submit node env to compute node
 		# set SINGULARITY BINDPATH
-		# set queues to submit to
 		# set priority
 		# combine stdout and stderr logging to same output file
+
+		# set queues to submit to
 
 			QSUB_ARGS="-S /bin/bash" \
 				QSUB_ARGS=${QSUB_ARGS}" -cwd" \
 				QSUB_ARGS=${QSUB_ARGS}" -V" \
 				QSUB_ARGS=${QSUB_ARGS}" -v SINGULARITY_BINDPATH=/mnt:/mnt" \
-				QSUB_ARGS=${QSUB_ARGS}" -q ${QUEUE_LIST}" \
 				QSUB_ARGS=${QSUB_ARGS}" -p ${PRIORITY}" \
 				QSUB_ARGS=${QSUB_ARGS}" -j y"
+
+			STANDARD_QSUB_ARGS=${QSUB_ARGS}" -q ${QUEUE_LIST}" \
+
+			EXTRACT_BARCODES_QSUB_ARGS=${QSUB_ARGS}" -q c6420_21.q,c6420_23.q"
 
 #####################
 # PIPELINE PROGRAMS #
@@ -199,9 +208,7 @@
 	{
 		echo \
 		qsub \
-			${QSUB_ARGS} \
-			-R y \
-			-pe slots 1 \
+			${STANDARD_QSUB_ARGS} \
 		-N EXTRACT_PARAMS_4_PICARD_${SEQ_PROJECT}_${FCID}_${LANE} \
 			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-EXTRACT_PARAMS_4_PICARD.log \
 		${SCRIPT_DIR}/EXTRACT_PARAMS_4_PICARD.sh \
@@ -225,12 +232,7 @@
 	{
 		echo \
 		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q "bigdata.q,c6420_21.q" \
-			-p ${PRIORITY} \
-			-j y \
+			${EXTRACT_BARCODES_QSUB_ARGS} \
 			-l excl=true \
 			-R y \
 		-N D.XTRACT.BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
@@ -256,12 +258,7 @@
 	{
 		echo \
 		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q "bigdata.q,c6420_21.q" \
-			-p ${PRIORITY} \
-			-j y \
+			${EXTRACT_BARCODES_QSUB_ARGS} \
 			-l excl=true \
 			-R y \
 			-m e \
@@ -286,12 +283,14 @@
 
 	DEMUX_PROJECT_LANE ()
 	{
-		echo Project started at $(date) >> ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/REPORTS/DEMUX_${LANE}_START_END_TIMESTAMP.txt
+		echo Project started at $(date) \
+		>> ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/REPORTS/DEMUX_${LANE}_START_END_TIMESTAMP.txt
 		CREATE_FLOWCELL_ARRAY
 		EXTRACT_PARAMS_4_PICARD
 		DEMUX_BARCODES
 		DEMUX_BCL2SAM
-		echo >| ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
+		echo \
+		>| ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
 	}
 
 # For each unique lane identified in the CSS style sample sheet, call the DEMUX_PROJECT_LANE function
@@ -311,6 +310,11 @@
 #Another email will be sent at the completion of each lane of the demux job.
 #Maybe TODO write a function to monitor and send an email when all lanes have completed.
 
-	printf "${SCRIPT_DIR}/PICARD.DEMUX.SUBMITTER.sh\nhas finished submitting at\n$(date)\nby $(whoami)\n${SAMPLE_SHEET}\nVersion: ${PIPELINE_VERSION}" \
-		| mail -s "${PERSON_NAME} has submitted PICARD.DEMUX.SUBMITTER.sh" \
+	printf "${SCRIPT_DIR}/PICARD.DEMUX.SUBMITTER.sh\n \
+		has finished submitting at\n \
+		$(date)\n \
+		by $(whoami)\n \
+		${SAMPLE_SHEET}\n \
+		Version: ${PIPELINE_VERSION}" \
+	| mail -s "${PERSON_NAME} has submitted PICARD.DEMUX.SUBMITTER.sh" \
 		${SEND_TO}
