@@ -37,10 +37,10 @@
 	RUN_FOLDER_NAME=${10} # 146T8B9M8B146T
 
 		RUN_SPLIT=$(echo ${RUN_FOLDER_NAME} \
-			| awk '{split($0,runbc,"_"); print runbc[2]":"runbc[3]":"}'`
+			| awk '{split($0,runbc,"_"); print runbc[2]":"runbc[3]":"}')
 		RUN_BARCODE=${RUN_SPLIT}${FCID}
 		# Try limiting JVM to FreeMem -50g to avoid pegging the host
-		FREE_MEMG=`awk '/MemAvailable/ { printf "%.0f", ($2/1024/1024)-50}' /proc/meminfo`
+		FREE_MEMG=$(awk '/MemAvailable/ { printf "%.0f", ($2/1024/1024)-50}' /proc/meminfo)
 
 START_EXTRACT_BARCODES=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 

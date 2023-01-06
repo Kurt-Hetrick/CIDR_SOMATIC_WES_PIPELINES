@@ -1,0 +1,12 @@
+### gitignore template
+#.somefiletype
+#some_local_dir/
+#some_local_dir/and_specific_file.file
+
+core*
+src/
+A.01_BWA-DEV.sh
+CIDR.WES.QC.SUBMITTER_DEV.sh
+OLD_DEV/
+*DS_Store*
+email_lists.txt
