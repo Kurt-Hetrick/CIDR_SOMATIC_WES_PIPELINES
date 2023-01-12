@@ -50,7 +50,7 @@ START_BCL2SAM=$(date '+%s')
 		# THEN convert BCL to umapped BAM using read structure to add the UMI into the RX/UX tags.
 		#num_processors can be tuned to the runtime environment by exposing to command line args if needed.
 		#https://software.broadinstitute.org/gatk/documentation/tooldocs/4.0.5.2/picard_illumina_IlluminaBasecallsToSam.php
-		# NOTE: ADAPTERS_TO_CHECK has been deprecated which is why it is not in here, but in the IDT webinar.
+		# NOTE: ADAPTERS_TO_CHECK DEFAULT IS ALREADY SPECIFIED SO THAT'S WHY IT IS NOT EXPLICITLY SPECIFIED HERE
 
 			CMD="singularity exec ${UMI_CONTAINER} java -jar"
 				CMD=${CMD}" -Xmx${FREE_MEMG}g"
