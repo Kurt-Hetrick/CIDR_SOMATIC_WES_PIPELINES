@@ -129,6 +129,16 @@
 				"UNPAIRED_READS_EXAMINED",\
 				"UNPAIRED_DUP_RATE",\
 				"PERCENT_DUPLICATION_OPTICAL",\
+				"MEAN_UMI_LENGTH",\
+				"OBSERVED_UNIQUE_UMIS",\
+				"INFERRED_UNIQUE_UMIS",\
+				"OBSERVED_BASE_ERRORS",\
+				"DUPLICATE_SETS_IGNORING_UMI",\
+				"DUPLICATE_SETS_WITH_UMI",\
+				"OBSERVED_UMI_ENTROPY",\
+				"INFERRED_UMI_ENTROPY",\
+				"UMI_BASE_QUALITIES",\
+				"PCT_UMI_WITH_N",\
 				"GENOME_SIZE",\
 				"BAIT_TERRITORY",\
 				"TARGET_TERRITORY",\
@@ -381,9 +391,11 @@
 				{print $5}')
 
 	# IF THERE ARE NO FAILED JOBS SEND EMAIL NOTIFICATION AND THEN DELETE TEMP FILES FOR THIS BATCH
-	if [[ ! -f ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt ]]
+	if
+		[[ ! -f ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt ]]
 	then
-		if [[ -f ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_MULTIPLE_LIBS.txt ]]
+		if
+			[[ -f ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_MULTIPLE_LIBS.txt ]]
 		then # note that there are samples with multiple libraries, but no errors.
 			printf "THIS RUN COMPLETED SUCCESSFULLY WITH NO ERRORS.\n \
 			SO THE TEMP FILES HAVE BEEN DELETED FOR THIS BATCH.\n \
@@ -405,7 +417,7 @@
 			cat ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_MULTIPLE_LIBS.txt \
 				>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 
-			mail -s "NO ERRORS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR.WES.QC.SUBMITTER.sh" \
+			mail -s "NO ERRORS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 				${SEND_TO}	\
 			< ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 		else # send vanilla email. no exceptions noted.
@@ -417,7 +429,7 @@
 			FULL PROJECT QC REPORT:\n ${PROJECT}.QC_REPORT.${TIMESTAMP}.csv\n\n \
 			ANEUPLOIDY REPORT:\n ${PROJECT}.ANEUPLOIDY_CHECK.${TIMESTAMP}.csv\n\n \
 			BY CHROMOSOME VERIFYBAMID REPORT:\n ${PROJECT}.PER_CHR_VERIFYBAMID.${TIMESTAMP}.csv\n" \
-			| mail -s "NO ERRORS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR.WES.QC.SUBMITTER.sh" \
+			| mail -s "NO ERRORS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 				${SEND_TO}
 		fi
 		# delete temp files
@@ -468,7 +480,7 @@
 
 			sleep 2s
 
-			mail -s "CONCORDANCE FAILURES ONLY: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR.WES.QC.SUBMITTER.sh" \
+			mail -s "CONCORDANCE FAILURES ONLY: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 				${SEND_TO} \
 			< ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 		else # message when concordance failed and there are no samples with multiple libraries
@@ -497,7 +509,7 @@
 
 			sleep 2s
 
-			mail -s "CONCORDANCE FAILURES ONLY: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR.WES.QC.SUBMITTER.sh" \
+			mail -s "CONCORDANCE FAILURES ONLY: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 				${SEND_TO} \
 			< ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 		fi
@@ -597,7 +609,7 @@
 
 			sleep 2s
 
-			mail -s "FAILED JOBS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR.WES.QC.SUBMITTER.sh" \
+			mail -s "FAILED JOBS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 				${SEND_TO} \
 			< ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 		elif [[ ! -f ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_MULTIPLE_LIBS.txt \
@@ -691,7 +703,7 @@
 
 			sleep 2s
 
-			mail -s "FAILED JOBS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR.WES.QC.SUBMITTER.sh" \
+			mail -s "FAILED JOBS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 				${SEND_TO} \
 			< ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 		elif [[ -f ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_MULTIPLE_LIBS.txt \
@@ -795,7 +807,7 @@
 
 			sleep 2s
 
-			mail -s "FAILED JOBS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR.WES.QC.SUBMITTER.sh" \
+			mail -s "FAILED JOBS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 				${SEND_TO} \
 			< ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 		else # message when there are no samples with multiple libraries or total failures
@@ -877,7 +889,7 @@
 
 			sleep 2s
 
-			mail -s "FAILED JOBS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR.WES.QC.SUBMITTER.sh" \
+			mail -s "FAILED JOBS: ${SAMPLE_SHEET} FOR ${PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 				${SEND_TO} \
 			< ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 		fi

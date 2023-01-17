@@ -24,8 +24,7 @@
 
 # INPUT VARIABLES
 
-	ALIGNMENT_CONTAINER=$1
-
+	UMI_CONTAINER=$1
 	CORE_PATH=$2
 	PROJECT=$3
 	FLOWCELL=$4
@@ -97,13 +96,13 @@
 
 	# construct cmd line
 
-		CMD="singularity exec ${ALIGNMENT_CONTAINER} java -jar"
-			CMD=${CMD}" /gatk/picard.jar"
+		CMD="singularity exec ${UMI_CONTAINER} java -jar"
+			CMD=${CMD}" /picard/picard.jar"
 		CMD=${CMD}" SamToFastq"
 			CMD=${CMD}" INPUT=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FLOWCELL}/RG_UMAP_BAMS/${PLATFORM_UNIT}.${INDEX_CONCAT}.${LANE}.bam"
 			CMD=${CMD}" FASTQ=/dev/stdout"
 			CMD=${CMD}" INTERLEAVE=true"
-		CMD=${CMD}" | singularity exec ${ALIGNMENT_CONTAINER} bwa"
+		CMD=${CMD}" | singularity exec ${UMI_CONTAINER} bwa"
 		CMD=${CMD}" mem"
 			CMD=${CMD}" -p"
 			CMD=${CMD}" -K 100000000"
@@ -111,8 +110,8 @@
 			CMD=${CMD}" -t 4"
 			CMD=${CMD}" ${REF_GENOME}"
 			CMD=${CMD}" /dev/stdin"
-		CMD=${CMD}" | singularity exec ${ALIGNMENT_CONTAINER} java -jar"
-			CMD=${CMD}" /gatk/picard.jar"
+		CMD=${CMD}" | singularity exec ${UMI_CONTAINER} java -jar"
+			CMD=${CMD}" /picard/picard.jar"
 		CMD=${CMD}" MergeBamAlignment"
 			CMD=${CMD}" ALIGNED=/dev/stdin"
 			CMD=${CMD}" UNMAPPED=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FLOWCELL}/RG_UMAP_BAMS/${PLATFORM_UNIT}.${INDEX_CONCAT}.${LANE}.bam"
@@ -122,8 +121,8 @@
 			CMD=${CMD}" EXPECTED_ORIENTATIONS=FR"
 			CMD=${CMD}" ALIGNER_PROPER_PAIR_FLAGS=false"
 		CMD=${CMD}" OUTPUT=/dev/stdout"
-		CMD=${CMD}" | singularity exec ${ALIGNMENT_CONTAINER} java -jar"
-			CMD=${CMD}" /gatk/picard.jar"
+		CMD=${CMD}" | singularity exec ${UMI_CONTAINER} java -jar"
+			CMD=${CMD}" /picard/picard.jar"
 		CMD=${CMD}" AddOrReplaceReadGroups"
 			CMD=${CMD}" INPUT=/dev/stdin"
 			CMD=${CMD}" CREATE_INDEX=true"
@@ -137,7 +136,7 @@
 			CMD=${CMD}" RGDT=${ISO_8601}"
 			CMD=${CMD}" RGPG=CIDR_SOMATIC_WES-${PIPELINE_VERSION}"
 			CMD=${CMD}" RGDS=${BAIT_NAME},${TARGET_NAME},${TITV_NAME}"
-		CMD=${CMD}" OUTPUT=${CORE_PATH}/${PROJECT}/TEMP/${PLATFORM_UNIT}_aligned.bam"
+		CMD=${CMD}" OUTPUT=${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${PLATFORM_UNIT}_aligned.bam"
 
 	# write command line to file and execute the command line
 

@@ -9,8 +9,9 @@
 	PRIORITY=$2 # optional. if no 2nd argument present then the default is -15
 
 		# if there is no 2nd argument present then use the number for priority
-			if [[ ! ${PRIORITY} ]]
-				then
+			if
+				[[ ! ${PRIORITY} ]]
+			then
 				PRIORITY="-15"
 			fi
 
@@ -75,7 +76,7 @@
 
 	# Generate a list of active queue and remove the ones that I don't want to use
 
-		QUEUE_LIST=$(qstat -f -s r \
+		STD_QUEUE_LIST=$(qstat -f -s r \
 			| egrep -v "^[0-9]|^-|^queue|^ " \
 			| cut -d @ -f 1 \
 			| sort \
@@ -84,15 +85,16 @@
 			| datamash collapse 1 \
 			| awk '{print $1}')
 
-		# just show how to exclude a node
-			# QUEUE_LIST=`qstat -f -s r \
-			# 	| egrep -v "^[0-9]|^-|^queue" \
-			# 	| cut -d @ -f 1 \
-			# 	| sort \
-			# 	| uniq \
-			# 	| egrep -v "all.q|cgc.q|programmers.q|rhel7.q|bigmem.q|bina.q|qtest.q" \
-			# 	| datamash collapse 1 \
-			# 	| awk '{print $1,"-l \x27hostname=!DellR730-03\x27"}'`
+	# Generate a list of active queue and remove the ones that I don't want to use, leaving only AVX ones
+
+		AVX_QUEUE_LIST=$(qstat -f -s r \
+			| egrep -v "^[0-9]|^-|^queue|^ " \
+			| cut -d @ -f 1 \
+			| sort \
+			| uniq \
+			| egrep -v "all.q|cgc.q|programmers.q|rhel7.q|bigmem.q|bina.q|qtest.q|bigdata.q|uhoh.q|testcgc.q|prod.q|rnd.q" \
+			| datamash collapse 1 \
+			| awk '{print $1}')
 
 	# QSUB ARGUMENTS LIST
 		# set shell on compute node
@@ -103,13 +105,16 @@
 		# set priority
 		# combine stdout and stderr logging to same output file
 
-			QSUB_ARGS="-S /bin/bash" \
-				QSUB_ARGS=${QSUB_ARGS}" -cwd" \
-				QSUB_ARGS=${QSUB_ARGS}" -V" \
-				QSUB_ARGS=${QSUB_ARGS}" -v SINGULARITY_BINDPATH=/mnt:/mnt" \
-				QSUB_ARGS=${QSUB_ARGS}" -q ${QUEUE_LIST}" \
-				QSUB_ARGS=${QSUB_ARGS}" -p ${PRIORITY}" \
-				QSUB_ARGS=${QSUB_ARGS}" -j y"
+			NON_QUEUE_QSUB_ARGS="-S /bin/bash" \
+				NON_QUEUE_QSUB_ARGS=${NON_QUEUE_QSUB_ARGS}" -cwd" \
+				NON_QUEUE_QSUB_ARGS=${NON_QUEUE_QSUB_ARGS}" -V" \
+				NON_QUEUE_QSUB_ARGS=${NON_QUEUE_QSUB_ARGS}" -v SINGULARITY_BINDPATH=/mnt:/mnt" \
+				NON_QUEUE_QSUB_ARGS=${NON_QUEUE_QSUB_ARGS}" -p ${PRIORITY}" \
+				NON_QUEUE_QSUB_ARGS=${NON_QUEUE_QSUB_ARGS}" -j y"
+
+			STD_QUEUE_QSUB_ARGS=${NON_QUEUE_QSUB_ARGS}" -q ${STD_QUEUE_LIST}"
+
+			AVX_QUEUE_QSUB_ARGS=${NON_QUEUE_QSUB_ARGS}" -q ${AVX_QUEUE_LIST}"
 
 #####################
 # PIPELINE PROGRAMS #
@@ -119,6 +124,15 @@
 	LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.1.1"
 		# Copied from /mnt/research/tools/LINUX/CIDRSEQSUITE/pipeline_dependencies/QC_REPORT/EnhancedSequencingQCReport.jar
 		# md5 f979bb4dc8d97113735ef17acd3a766e  EnhancedSequencingQCReport.jar
+
+	UMI_CONTAINER="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CONTAINERS/umi-0.0.2.simg"
+		# uses gatk 4.3.0.0 as the base image
+		### added the following to the base image
+			# bwa-0.7.15
+			# picard-2.27.5 (in /picard dir)
+			# datamash-1.6
+			# fgbio-2.0.2 (in /fgbio dir)
+
 	ALIGNMENT_CONTAINER="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CONTAINERS/ddl_ce_control_align-0.0.4.simg"
 	# contains the following software and is on Ubuntu 16.04.5 LTS
 		# gatk 4.0.11.0 (base image). also contains the following.
@@ -241,7 +255,7 @@
 	{
 		echo \
 		qsub \
-			${QSUB_ARGS} \
+			${STD_QUEUE_QSUB_ARGS} \
 		-N A00-LAB_PREP_METRICS_${PROJECT_NAME} \
 			-o ${CORE_PATH}/${PROJECT_NAME}/LOGS/${PROJECT_NAME}-LAB_PREP_METRICS.log \
 		${COMMON_SCRIPT_DIR}/A00-LAB_PREP_METRICS.sh \
@@ -273,7 +287,10 @@
 	{
 		SAMPLE_ARRAY=(`awk 1 ${SAMPLE_SHEET} \
 			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
-			| awk 'BEGIN {FS=","} $8=="'${SM_TAG}'" {split($19,INDEL,";"); print $1,$5,$6,$7,$8,$9,$10,$12,$15,$16,$17,$18,INDEL[1],INDEL[2]}' \
+			| awk 'BEGIN {FS=","} \
+				$8=="'${SM_TAG}'" \
+				{split($19,INDEL,";"); \
+				print $1,$5,$6,$7,$8,$9,$10,$12,$15,$16,$17,$18,INDEL[1],INDEL[2]}' \
 			| sort \
 			| uniq`)
 
@@ -396,7 +413,7 @@
 	{
 		echo \
 		qsub \
-			${QSUB_ARGS} \
+			${STD_QUEUE_QSUB_ARGS} \
 		-N A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT} \
 			-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-FIX_BED_FILES.log \
 		${GRCH37_SCRIPT_DIR}/A01-FIX_BED_FILES.sh \
@@ -420,7 +437,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N A01-A01-SELECT_VERIFYBAMID_VCF_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-SELECT_VERIFYBAMID_VCF.log \
 			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT} \
@@ -585,11 +602,11 @@
 	{
 		echo \
 		qsub \
-			${QSUB_ARGS} \
+			${STD_QUEUE_QSUB_ARGS} \
 		-N A02-BWA_${SGE_SM_TAG}_${FCID}_${LANE}_${INDEX} \
 			-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}_${FCID}_${LANE}_${INDEX}-BWA.log \
 		${COMMON_SCRIPT_DIR}/A02-BWA.sh \
-			${ALIGNMENT_CONTAINER} \
+			${UMI_CONTAINER} \
 			${CORE_PATH} \
 			${PROJECT} \
 			${FCID} \
@@ -615,7 +632,8 @@
 # RUN STEPS TO RUN BWA, ETC #
 #############################
 
-	for PLATFORM_UNIT in $(awk 1 ${SAMPLE_SHEET} \
+	for PLATFORM_UNIT in \
+		$(awk 1 ${SAMPLE_SHEET} \
 			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
 			| awk 'BEGIN {FS=","} \
 				NR>1 \
@@ -656,7 +674,7 @@
 			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
 			| awk 'BEGIN {FS=","; OFS="\t"} \
 				NR>1 \
-				{print $1,$8,$2"_"$3"_"$4,$2"_"$3"_"$4".bam",$8,$10}' \
+				{print $1,$8,$2"_"$3"_"$4,$2"_"$3"_"$4"_aligned.bam",$8,$10}' \
 			| awk 'BEGIN {OFS="\t"} \
 				{sub(/@/,"_",$5)} \
 				{print $1,$2,$3,$4,$5,$6}' \
@@ -681,14 +699,14 @@
 			"-cwd",\
 			"-V",\
 			"-v SINGULARITY_BINDPATH=/mnt:/mnt",\
-			"-q","'${QUEUE_LIST}'",\
+			"-q","'${STD_QUEUE_LIST}'",\
 			"-p","'${PRIORITY}'",\
 			"-N","B01-MARK_DUPLICATES_"$5"_"$1,\
 			"-o","'${CORE_PATH}'/"$1"/LOGS/"$2"/"$2"-MARK_DUPLICATES.log",\
 			"-j y",\
 			"-hold_jid","A02-BWA_"$5"_"$3, \
 			"'${COMMON_SCRIPT_DIR}'""/B01-MARK_DUPLICATES.sh",\
-			"'${ALIGNMENT_CONTAINER}'",\
+			"'${UMI_CONTAINER}'",\
 			"'${CORE_PATH}'",\
 			$1,\
 			$2,\
@@ -703,56 +721,6 @@
 ### PROCEEDING WITH AGGREGATED SAMPLE FILES NOW ###
 ###################################################
 
-	################################
-	# run bqsr using bait bed file #
-	################################
-
-		RUN_BQSR ()
-		{
-			echo \
-			qsub \
-				${QSUB_ARGS} \
-			-N C01-PERFORM_BQSR_${SGE_SM_TAG}_${PROJECT} \
-				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-PERFORM_BQSR.log \
-			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT} \
-			${COMMON_SCRIPT_DIR}/C01-PERFORM_BQSR.sh \
-				${BQSR_CONTAINER} \
-				${CORE_PATH} \
-				${PROJECT} \
-				${SM_TAG} \
-				${REF_GENOME} \
-				${KNOWN_INDEL_1} \
-				${KNOWN_INDEL_2} \
-				${DBSNP} \
-				${BAIT_BED} \
-				${SAMPLE_SHEET} \
-				${SUBMIT_STAMP}
-		}
-
-	##############################
-	# use a 4 bin q score scheme #
-	# remove indel Q scores ######
-	# retain original Q score  ###
-	##############################
-
-		APPLY_BQSR ()
-		{
-			echo \
-			qsub \
-				${QSUB_ARGS} \
-			-N D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT} \
-				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-APPLY_BQSR.log \
-			-hold_jid C01-PERFORM_BQSR_${SGE_SM_TAG}_${PROJECT} \
-			${COMMON_SCRIPT_DIR}/D01-APPLY_BQSR.sh \
-				${BQSR_CONTAINER} \
-				${CORE_PATH} \
-				${PROJECT} \
-				${SM_TAG} \
-				${REF_GENOME} \
-				${SAMPLE_SHEET} \
-				${SUBMIT_STAMP}
-		}
-
 	###################
 	# RUN VERIFYBAMID #
 	###################
@@ -761,10 +729,10 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N E01-RUN_VERIFYBAMID_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-VERIFYBAMID.log \
-			-hold_jid A01-A01-SELECT_VERIFYBAMID_VCF_${SGE_SM_TAG}_${PROJECT},D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT} \
+			-hold_jid A01-A01-SELECT_VERIFYBAMID_VCF_${SGE_SM_TAG}_${PROJECT},B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT} \
 			${COMMON_SCRIPT_DIR}/E01-VERIFYBAMID.sh \
 				${ALIGNMENT_CONTAINER} \
 				${CORE_PATH} \
@@ -774,23 +742,79 @@
 				${SUBMIT_STAMP}
 		}
 
+	###############################################################################
+	##### REMOVING BQSR FOR NOW ###################################################
+	##### I'M NOT SURE IF USING BQSR WITH TUMOR SAMPLES IS A GOOD THING TO DO #####
+	###############################################################################
+
+		# ################################
+		# # run bqsr using bait bed file #
+		# ################################
+
+		# 	RUN_BQSR ()
+		# 	{
+		# 				echo \
+		# 				qsub \
+		# 					${STD_QUEUE_QSUB_ARGS} \
+		# 				-N C01-PERFORM_BQSR_${SGE_SM_TAG}_${PROJECT} \
+		# 					-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-PERFORM_BQSR.log \
+		# 				-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT} \
+		# 				${COMMON_SCRIPT_DIR}/C01-PERFORM_BQSR.sh \
+		# 					${BQSR_CONTAINER} \
+		# 					${CORE_PATH} \
+		# 					${PROJECT} \
+		# 					${SM_TAG} \
+		# 					${REF_GENOME} \
+		# 					${KNOWN_INDEL_1} \
+		# 					${KNOWN_INDEL_2} \
+		# 					${DBSNP} \
+		# 					${BAIT_BED} \
+		# 					${SAMPLE_SHEET} \
+		# 					${SUBMIT_STAMP}
+		# 	}
+
+		# ##############################
+		# # use a 4 bin q score scheme #
+		# # remove indel Q scores ######
+		# # retain original Q score  ###
+		# ##############################
+
+		# 	APPLY_BQSR ()
+		# 	{
+		# 				echo \
+		# 				qsub \
+		# 					${STD_QUEUE_QSUB_ARGS} \
+		# 				-N D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT} \
+		# 					-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-APPLY_BQSR.log \
+		# 				-hold_jid C01-PERFORM_BQSR_${SGE_SM_TAG}_${PROJECT} \
+		# 				${COMMON_SCRIPT_DIR}/D01-APPLY_BQSR.sh \
+		# 					${BQSR_CONTAINER} \
+		# 					${CORE_PATH} \
+		# 					${PROJECT} \
+		# 					${SM_TAG} \
+		# 					${REF_GENOME} \
+		# 					${SAMPLE_SHEET} \
+		# 					${SUBMIT_STAMP}
+		# 	}
+
 ###############################
 # RUN STEPS BQSR, VERIFYBAMID #
 ###############################
 
-	for SM_TAG in $(awk 1 ${SAMPLE_SHEET} \
-		| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
-		| awk 'BEGIN {FS=","} \
-			NR>1 \
-			{print $8}' \
-		| sort \
-		| uniq);
+	for SM_TAG in \
+		$(awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} \
+				NR>1 \
+				{print $8}' \
+			| sort \
+			| uniq);
 	do
 		CREATE_SAMPLE_ARRAY
-		RUN_BQSR
-		echo sleep 0.1s
-		APPLY_BQSR
-		echo sleep 0.1s
+		# RUN_BQSR
+		# echo sleep 0.1s
+		# APPLY_BQSR
+		# echo sleep 0.1s
 		RUN_VERIFYBAMID
 		echo sleep 0.1s
 	done
@@ -818,10 +842,10 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N F01-HAPLOTYPE_CALLER_${SGE_SM_TAG}_${PROJECT}_chr${CHROMOSOME} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-HAPLOTYPE_CALLER_chr${CHROMOSOME}.log \
-			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT},E01-RUN_VERIFYBAMID_${SGE_SM_TAG}_${PROJECT} \
+			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT},E01-RUN_VERIFYBAMID_${SGE_SM_TAG}_${PROJECT} \
 			${COMMON_SCRIPT_DIR}/F01-HAPLOTYPE_CALLER_SCATTER.sh \
 				${GATK_3_7_0_CONTAINER} \
 				${CORE_PATH} \
@@ -838,10 +862,10 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N F01-HAPLOTYPE_CALLER_${SGE_SM_TAG}_${PROJECT}_chr${CHROMOSOME} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-HAPLOTYPE_CALLER_chr${CHROMOSOME}.log \
-			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT},E01-RUN_VERIFYBAMID_${SGE_SM_TAG}_${PROJECT} \
+			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT},E01-RUN_VERIFYBAMID_${SGE_SM_TAG}_${PROJECT} \
 			${COMMON_SCRIPT_DIR}/F01-HAPLOTYPE_CALLER_SCATTER.sh \
 				${GATK_3_7_0_CONTAINER} \
 				${CORE_PATH} \
@@ -864,7 +888,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N G01-GENOTYPE_GVCF_${SGE_SM_TAG}_${PROJECT}_chr${CHROMOSOME} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-GENOTYPE_GVCF_chr${CHROMOSOME}.log \
 			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},F01-HAPLOTYPE_CALLER_${SGE_SM_TAG}_${PROJECT}_chr${CHROMOSOME} \
@@ -928,7 +952,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N G02-HAPLOTYPE_CALLER_GVCF_GATHER_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-HAPLOTYPE_CALLER_GVCF_GATHER.log \
 			${HOLD_ID_PATH_GVCF_AND_HC_BAM_GATHER} \
@@ -954,7 +978,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N G03-HAPLOTYPE_CALLER_BAM_GATHER_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-HAPLOTYPE_CALLER_BAM_GATHER.log \
 			${HOLD_ID_PATH_GVCF_AND_HC_BAM_GATHER} \
@@ -976,7 +1000,7 @@
 			{
 				echo \
 				qsub \
-					${QSUB_ARGS} \
+					${STD_QUEUE_QSUB_ARGS} \
 				-N G03-A01-HAPLOTYPE_CALLER_CRAM_${SGE_SM_TAG}_${PROJECT} \
 					-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-HC_BAM_TO_CRAM.log \
 				-hold_jid G03-HAPLOTYPE_CALLER_BAM_GATHER_${SGE_SM_TAG}_${PROJECT} \
@@ -999,7 +1023,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N H01-GENOTYPE_GVCF_GATHER_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-GENOTYPE_GVCF_GATHER.log \
 			${HOLD_ID_PATH_GENOTYPE_GVCF_GATHER} \
@@ -1088,10 +1112,10 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N E02-BAM_TO_CRAM_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-BAM_TO_CRAM.log \
-			-hold_jid D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT} \
+			-hold_jid B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT} \
 			${COMMON_SCRIPT_DIR}/E02-BAM_TO_CRAM.sh \
 				${ALIGNMENT_CONTAINER} \
 				${CORE_PATH} \
@@ -1110,10 +1134,10 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N E03-DOC_CODING_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-DOC_CODING.log \
-			-hold_jid D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT} \
+			-hold_jid B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT} \
 			${COMMON_SCRIPT_DIR}/E03-DOC_CODING.sh \
 				${GATK_3_7_0_CONTAINER} \
 				${CORE_PATH} \
@@ -1134,10 +1158,10 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N E04-DOC_BAIT_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-DOC_BED_SUPERSET.log \
-			-hold_jid D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT} \
+			-hold_jid B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT} \
 			${COMMON_SCRIPT_DIR}/E04-DOC_BED_SUPERSET.sh \
 				${GATK_3_7_0_CONTAINER} \
 				${CORE_PATH} \
@@ -1158,10 +1182,10 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N E05-DOC_TARGET_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-DOC_TARGET.log \
-			-hold_jid D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT} \
+			-hold_jid B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT} \
 			${COMMON_SCRIPT_DIR}/E05-DOC_TARGET.sh \
 				${GATK_3_7_0_CONTAINER} \
 				${CORE_PATH} \
@@ -1182,7 +1206,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N E05-A01-CHROM_DEPTH_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-ANEUPLOIDY_CHECK.log \
 			-hold_jid E05-DOC_TARGET_${SGE_SM_TAG}_${PROJECT} \
@@ -1203,7 +1227,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N F02-COLLECT_MULTIPLE_METRICS_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-COLLECT_MULTIPLE_METRICS.log \
 			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},E02-BAM_TO_CRAM_${SGE_SM_TAG}_${PROJECT} \
@@ -1227,7 +1251,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N F03-COLLECT_HS_METRICS_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-COLLECT_HS_METRICS.log \
 			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},E02-BAM_TO_CRAM_${SGE_SM_TAG}_${PROJECT} \
@@ -1253,10 +1277,10 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N E06-VERIFYBAMID_PER_AUTO_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-VERIFYBAMID_PER_CHR.log \
-			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},D01-APPLY_BQSR_${SGE_SM_TAG}_${PROJECT} \
+			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},B01-MARK_DUPLICATES_${SGE_SM_TAG}_${PROJECT} \
 			${GRCH37_SCRIPT_DIR}/E06-VERIFYBAMID_PER_AUTO.sh \
 				${ALIGNMENT_CONTAINER} \
 				${GATK_3_7_0_CONTAINER} \
@@ -1278,7 +1302,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N E06-A01-CAT_VERIFYBAMID_AUTO_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-CAT_VERIFYBAMID_AUTO.log \
 			-hold_jid E06-VERIFYBAMID_PER_AUTO_${SGE_SM_TAG}_${PROJECT} \
@@ -1295,13 +1319,14 @@
 # RUN STEPS TO DO BAM/CRAM RELATED METRICS #
 ############################################
 
-	for SM_TAG in $(awk 1 ${SAMPLE_SHEET} \
-		| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
-		| awk 'BEGIN {FS=","} \
-			NR>1 \
-			{print $8}' \
-		| sort \
-		| uniq);
+	for SM_TAG in \
+		$(awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} \
+				NR>1 \
+				{print $8}' \
+			| sort \
+			| uniq);
 	do
 		CREATE_SAMPLE_ARRAY
 		BAM_TO_CRAM
@@ -1336,7 +1361,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N I01-EXTRACT_SNV_QC_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-SELECT_SNV_QC.log \
 			-hold_jid H01-GENOTYPE_GVCF_GATHER_${SGE_SM_TAG}_${PROJECT} \
@@ -1358,7 +1383,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N I02-EXTRACT_INDEL_AND_MIXED_QC_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-SELECT_INDEL_QC.log \
 			-hold_jid H01-GENOTYPE_GVCF_GATHER_${SGE_SM_TAG}_${PROJECT} \
@@ -1380,7 +1405,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N I01-A01-FILTER_SNV_QC_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-FILTER_SNV_QC.log \
 			-hold_jid I01-EXTRACT_SNV_QC_${SGE_SM_TAG}_${PROJECT} \
@@ -1402,7 +1427,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N I02-A01-FILTER_INDEL_AND_MIXED_QC_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-FILTER_INDEL_QC.log \
 			-hold_jid I02-EXTRACT_INDEL_AND_MIXED_QC_${SGE_SM_TAG}_${PROJECT} \
@@ -1424,7 +1449,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N J01-COMBINE_FILTERED_VCF_FILES_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-FILTER_INDEL_QC.log \
 			-hold_jid I01-A01-FILTER_SNV_QC_${SGE_SM_TAG}_${PROJECT},I02-A01-FILTER_INDEL_AND_MIXED_QC_${SGE_SM_TAG}_${PROJECT} \
@@ -1446,7 +1471,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N J01-A04-EXTRACT_SNV_TARGET_PASS_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-EXTRACT_SNV_TARGET_PASS.log \
 			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},J01-COMBINE_FILTERED_VCF_FILES_${SGE_SM_TAG}_${PROJECT} \
@@ -1471,7 +1496,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N J01-A04-A01-SNV_TARGET_PASS_CONCORDANCE_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-TARGET_PASS_SNV_QC_CONCORDANCE.log \
 			-hold_jid J01-A04-EXTRACT_SNV_TARGET_PASS_${SGE_SM_TAG}_${PROJECT} \
@@ -1495,7 +1520,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N J01-A01-VCF_METRICS_BAIT_QC_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-VCF_METRICS_BAIT_QC.log \
 			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},J01-COMBINE_FILTERED_VCF_FILES_${SGE_SM_TAG}_${PROJECT} \
@@ -1519,7 +1544,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N J01-A02-VCF_METRICS_TARGET_QC_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-VCF_METRICS_TARGET_QC.log \
 			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},J01-COMBINE_FILTERED_VCF_FILES_${SGE_SM_TAG}_${PROJECT} \
@@ -1543,7 +1568,7 @@
 		{
 			echo \
 			qsub \
-				${QSUB_ARGS} \
+				${STD_QUEUE_QSUB_ARGS} \
 			-N J01-A03-VCF_METRICS_TITV_QC_${SGE_SM_TAG}_${PROJECT} \
 				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-VCF_METRICS_TITV_QC.log \
 			-hold_jid A01-FIX_BED_FILES_${SGE_SM_TAG}_${PROJECT},J01-COMBINE_FILTERED_VCF_FILES_${SGE_SM_TAG}_${PROJECT} \
@@ -1567,7 +1592,7 @@ QC_REPORT_PREP ()
 {
 echo \
 qsub \
-${QSUB_ARGS} \
+${STD_QUEUE_QSUB_ARGS} \
 -N X1_${SGE_SM_TAG} \
 -hold_jid \
 E01-RUN_VERIFYBAMID_${SGE_SM_TAG}_${PROJECT},\
@@ -1658,7 +1683,7 @@ ${SUBMIT_STAMP}
 	{
 		echo \
 		qsub \
-			${QSUB_ARGS} \
+			${STD_QUEUE_QSUB_ARGS} \
 			-m e \
 			-M khetric1@jhmi.edu \
 		-N X01-X01-END_PROJECT_TASKS_${PROJECT} \
@@ -1691,5 +1716,5 @@ ${SUBMIT_STAMP}
 # EMAIL WHEN DONE SUBMITTING
 
 printf "${SAMPLE_SHEET}\nhas finished submitting at\n`date`\nby `whoami`" \
-	| mail -s "${PERSON_NAME} has submitted CIDR.WES.QC.SUBMITTER.sh" \
+	| mail -s "${PERSON_NAME} has submitted CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH37.sh" \
 		${SEND_TO}

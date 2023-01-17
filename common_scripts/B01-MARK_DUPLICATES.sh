@@ -24,7 +24,7 @@
 
 # INPUT VARIABLES
 
-	ALIGNMENT_CONTAINER=$1
+	UMI_CONTAINER=$1
 	CORE_PATH=$2
 
 	PROJECT=$3
@@ -35,23 +35,25 @@
 	SUBMIT_STAMP=$7
 
 	INPUT_BAM_FILE_STRING=$8
-		INPUT=`echo ${INPUT_BAM_FILE_STRING} | sed 's/,/ /g'`
+		INPUT=$(echo ${INPUT_BAM_FILE_STRING} \
+			| sed 's/,/ /g')
 
 ## If NovaSeq is contained in the description field of the sample sheet then set the pixel distance appropriately
 ## Assumption: all read groups come from some sequencer model. otherwise pixel distance would be set to NovaSeq
 ## If mixing NovaSeq and non-NovaSeq then this workflow would need to change.
 
-	if [[ ${SEQUENCER_MODEL} == *"NovaSeq"* ]]
-		then
-			PIXEL_DISTANCE="2500"
-		else
-			PIXEL_DISTANCE="100"
+	if
+		[[ ${SEQUENCER_MODEL} == *"NovaSeq"* ]]
+	then
+		PIXEL_DISTANCE="2500"
+	else
+		PIXEL_DISTANCE="100"
 	fi
 
 ## Merge files and Mark Duplicates with Picard, write a duplicate report
 ## do coordinate sorting with sambamba
 
-START_MARK_DUPLICATES=`date '+%s'` # capture time process starts for wall clock tracking purposes.
+START_MARK_DUPLICATES=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 # if any part of pipe fails set exit to non-zero
 
@@ -59,23 +61,19 @@ START_MARK_DUPLICATES=`date '+%s'` # capture time process starts for wall clock 
 
 # construct command line
 
-	CMD="singularity exec ${ALIGNMENT_CONTAINER} java -jar"
+	CMD="singularity exec ${UMI_CONTAINER} java -jar"
 		CMD=${CMD}" -Xmx16g"
 		CMD=${CMD}" -XX:ParallelGCThreads=4"
-		CMD=${CMD}" /gatk/picard.jar"
-	CMD=${CMD}" MarkDuplicates"
-		CMD=${CMD}" ASSUME_SORT_ORDER=queryname"
+		CMD=${CMD}" /picard/picard.jar"
+	CMD=${CMD}" UmiAwareMarkDuplicatesWithMateCigar"
+		CMD=${CMD}" ASSUME_SORT_ORDER=coordinate"
 		CMD=${CMD}" ${INPUT}"
-		CMD=${CMD}" VALIDATION_STRINGENCY=SILENT"
-		CMD=${CMD}" COMPRESSION_LEVEL=0"
 		CMD=${CMD}" OPTICAL_DUPLICATE_PIXEL_DISTANCE=${PIXEL_DISTANCE}"
+		CMD=${CMD}" TAG_DUPLICATE_SET_MEMBERS=true"
+		CMD=${CMD}" CREATE_INDEX=true"
 	CMD=${CMD}" METRICS_FILE=${CORE_PATH}/${PROJECT}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt"
-	CMD=${CMD}" OUTPUT=/dev/stdout"
-	CMD=${CMD}" | singularity exec ${ALIGNMENT_CONTAINER} sambamba"
-		CMD=${CMD}" sort"
-		CMD=${CMD}" -t 4"
-	CMD=${CMD}" -o ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.dup.bam"
-		CMD=${CMD}" /dev/stdin"
+	CMD=${CMD}" UMI_METRICS_FILE=${CORE_PATH}/${PROJECT}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_UMI_METRICS.txt"
+	CMD=${CMD}" OUTPUT=${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.bam"
 
 	# write command line to file and execute the command line
 
@@ -85,19 +83,20 @@ START_MARK_DUPLICATES=`date '+%s'` # capture time process starts for wall clock 
 
 	# check the exit signal at this point.
 
-		SCRIPT_STATUS=`echo $?`
+		SCRIPT_STATUS=$(echo $?)
 
 		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
 		# also write to file that this job failed
 
-			if [ "${SCRIPT_STATUS}" -ne 0 ]
-				then
-					echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-					>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
-					exit ${SCRIPT_STATUS}
+			if
+				[ "${SCRIPT_STATUS}" -ne 0 ]
+			then
+				echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+				>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+				exit ${SCRIPT_STATUS}
 			fi
 
-END_MARK_DUPLICATES=`date '+%s'` # capture time process stops for wall clock tracking purposes.
+END_MARK_DUPLICATES=$(date '+%s') # capture time process stops for wall clock tracking purposes.
 
 # write wall clock times to file
 

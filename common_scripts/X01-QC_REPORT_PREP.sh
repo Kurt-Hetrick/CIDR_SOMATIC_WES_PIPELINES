@@ -454,13 +454,15 @@
 					NR==2 \
 					{print $1}')
 
-	if [[ ! -f ${CORE_PATH}/${PROJECT}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt ]]
+	if
+		[[ ! -f ${CORE_PATH}/${PROJECT}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt ]]
 	then
 		echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 				transpose \
 		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.QC_REPORT_TEMP.txt
-	elif [[ -f ${CORE_PATH}/${PROJECT}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt \
+	elif
+		[[ -f ${CORE_PATH}/${PROJECT}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt \
 		&& ${MAX_RECORD} -lt 7 ]]; \
 	then
 		echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
@@ -498,6 +500,32 @@
 				else \
 					print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,\
 						($7/$8),($2/$6)*100}' \
+			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
+				transpose \
+		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.QC_REPORT_TEMP.txt
+	fi
+
+################################################################################################
+### UMI REPORT #################################################################################
+################################################################################################
+### THIS IS THE HEADER #########################################################################
+### "MEAN_UMI_LENGTH","OBSERVED_UNIQUE_UMIS","INFERRED_UNIQUE_UMIS","OBSERVED_BASE_ERRORS" #####
+### "DUPLICATE_SETS_IGNORING_UMI","DUPLICATE_SETS_WITH_UMI","OBSERVED_UMI_ENTROPY", ############
+### "INFERRED_UMI_ENTROPY","UMI_BASE_QUALITIES","PCT_UMI_WITH_N" ###############################
+################################################################################################
+
+	if
+		[[ ! -f ${CORE_PATH}/${PROJECT}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_UMI_METRICS.txt ]]
+	then
+		echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
+				transpose \
+		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.QC_REPORT_TEMP.txt
+	else
+		awk 'BEGIN {OFS="\t"} \
+			NR==8 \
+			{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11*100}' \
+		${CORE_PATH}/${PROJECT}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_UMI_METRICS.txt \
 			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 				transpose \
 		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.QC_REPORT_TEMP.txt
@@ -767,15 +795,18 @@
 ### "PCT_A","PCT_C","PCT_G","PCT_T","PCT_N" ###########
 #######################################################
 
-	BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT=$(wc -l ${CORE_PATH}/${PROJECT}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt)
+	BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT=$(wc -l ${CORE_PATH}/${PROJECT}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt \
+			| awk '{print $1}')
 
-	if [[ ! -f ${CORE_PATH}/${PROJECT}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt ]]
+	if
+		[[ ! -f ${CORE_PATH}/${PROJECT}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt ]]
 	then
 		echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 				transpose \
 		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.QC_REPORT_TEMP.txt
-	elif [[ -f ${CORE_PATH}/${PROJECT}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt \
+	elif
+		[[ -f ${CORE_PATH}/${PROJECT}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt \
 			&& ${BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT} -lt 8 ]]
 	then
 		echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
