@@ -310,11 +310,13 @@
 #Another email will be sent at the completion of each lane of the demux job.
 #Maybe TODO write a function to monitor and send an email when all lanes have completed.
 
-	printf "${SCRIPT_DIR}/PICARD.DEMUX.SUBMITTER.sh\n \
+	printf "${SCRIPT_DIR}/PICARD_DEMUX_SUBMITTER.sh\n \
 		has finished submitting at\n \
 		$(date)\n \
 		by $(whoami)\n \
-		${SAMPLE_SHEET}\n \
-		Version: ${PIPELINE_VERSION}" \
-	| mail -s "${PERSON_NAME} has submitted PICARD.DEMUX.SUBMITTER.sh" \
+		CIDR Sample Sheet: ${SAMPLE_SHEET}\n \
+		Illumina Sample Sheet: ${IEM_SAMPLE_SHEET}\n \
+		READ_STRUCTURE: ${READ_STRUCTURE}\n \
+		Pipeline Version: ${PIPELINE_VERSION}" \
+	| mail -s "${PERSON_NAME} has submitted PICARD_DEMUX_SUBMITTER.sh" \
 		${SEND_TO}
