@@ -331,6 +331,30 @@
 		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.QC_REPORT_TEMP.txt
 	fi
 
+#######################################################
+### GATK CALCULATE TUMOR CONTAMINATION ################
+#######################################################
+### THIS IS THE HEADER ################################
+### "GATK_TUMOR_CONTAM_PCT","GATK_TUMOR_CONTAM_ERR" ###
+#######################################################
+
+	if
+		[[ ! -f ${CORE_PATH}/${PROJECT}/REPORTS/GATK_CALC_TUMOR_CONTAM/${SM_TAG}.calculatetumorcontamination.table ]]
+	then
+		echo -e NaN'\t'NaN \
+			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
+				transpose \
+		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.QC_REPORT_TEMP.txt
+	else
+		awk 'BEGIN {OFS="\t"} \
+			NR==2 \
+			{print $2*100,$3*100}' \
+		${CORE_PATH}/${PROJECT}/REPORTS/GATK_CALC_TUMOR_CONTAM/${SM_TAG}.calculatetumorcontamination.table \
+			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
+				transpose \
+		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}.QC_REPORT_TEMP.txt
+	fi
+
 ######################################################################################################
 ##### INSERT SIZE ####################################################################################
 ######################################################################################################
