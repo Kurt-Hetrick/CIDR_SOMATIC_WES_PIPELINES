@@ -1776,5 +1776,5 @@ ${SUBMIT_STAMP}
 # EMAIL WHEN DONE SUBMITTING
 
 printf "${SAMPLE_SHEET}\nhas finished submitting at\n`date`\nby `whoami`" \
-	| mail -s "${PERSON_NAME} has submitted CIDR.WES.QC.SUBMITTER.GRCH38.sh" \
+	| mail -s "${PERSON_NAME} has submitted CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH38.sh" \
 		${SEND_TO}

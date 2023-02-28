@@ -48,6 +48,7 @@ START_GATK_CALC_TUMOR_CONTAM=$(date '+%s')
 			CMD=${CMD}" /gatk/gatk.jar"
 		CMD=${CMD}" CalculateContamination"
 			CMD=${CMD}" --input ${CORE_PATH}/${PROJECT}/REPORTS/GATK_CALC_TUMOR_CONTAM/${SM_TAG}.getpileupsummaries.table"
+		CMD=${CMD}" --tumor-segmentation ${CORE_PATH}/${PROJECT}/REPORTS/GATK_CALC_TUMOR_CONTAM/${SM_TAG}.segments.table"
 		CMD=${CMD}" --output ${CORE_PATH}/${PROJECT}/REPORTS/GATK_CALC_TUMOR_CONTAM/${SM_TAG}.calculatetumorcontamination.table"
 
 	# write command line to file and execute the command line

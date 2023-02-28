@@ -572,7 +572,8 @@
 	# this will take when there are no reads in the file...but i don't think that it will handle when there are reads, but none fall on target
 	# the next time i that happens i'll fix this to handle it.
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 				| singularity exec ${ALIGNMENT_CONTAINER} datamash \

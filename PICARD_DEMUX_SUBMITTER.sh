@@ -22,7 +22,7 @@
 
 	SUBMITTER_SCRIPT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 
-	SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/scripts"
+	SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/demux_scripts"
 
 ##################
 # CORE VARIABLES #
@@ -86,8 +86,6 @@
 		# set priority
 		# combine stdout and stderr logging to same output file
 
-		# set queues to submit to
-
 			QSUB_ARGS="-S /bin/bash" \
 				QSUB_ARGS=${QSUB_ARGS}" -cwd" \
 				QSUB_ARGS=${QSUB_ARGS}" -V" \
@@ -95,7 +93,18 @@
 				QSUB_ARGS=${QSUB_ARGS}" -p ${PRIORITY}" \
 				QSUB_ARGS=${QSUB_ARGS}" -j y"
 
-			STANDARD_QSUB_ARGS=${QSUB_ARGS}" -q ${QUEUE_LIST}" \
+		# Generate a list of active queue and remove the ones that I don't want to use
+
+			STD_QUEUE_LIST=$(qstat -f -s r \
+				| egrep -v "^[0-9]|^-|^queue|^ " \
+				| cut -d @ -f 1 \
+				| sort \
+				| uniq \
+				| egrep -v "all.q|cgc.q|programmers.q|rhel7.q|bigmem.q|bina.q|qtest.q|bigdata.q|uhoh.q|testcgc.q" \
+				| datamash collapse 1 \
+				| awk '{print $1}')
+
+			STANDARD_QSUB_ARGS=${QSUB_ARGS}" -q ${STD_QUEUE_LIST}" \
 
 			EXTRACT_BARCODES_QSUB_ARGS=${QSUB_ARGS}" -q c6420_21.q,c6420_23.q"
 
@@ -103,7 +112,7 @@
 # PIPELINE PROGRAMS #
 #####################
 
-	UMI_CONTAINER="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CONTAINERS/umi-0.0.1.simg"
+	UMI_CONTAINER="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CONTAINERS/umi-0.0.2-hot_fix.simg"
 		# picard 2.26.10
 		# datamash 1.6 # with some version of perl
 		# some version of openjdk-8
@@ -179,12 +188,14 @@
 			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
 			| awk 'BEGIN {FS=","} \
 				$3=="'${LANE}'" \
-				{print $2}' \
+				{print $2,$9}' \
 			| sort \
 			| uniq`)
 
 		FCID=${FCID_ARRAY[0]}
 		
+		SEQ_CENTER=${FCID_ARRAY[1]}
+
 		RUN_FOLDER=$(ls ${NOVASEQ_REPO} \
 			| grep ${FCID})
 
@@ -277,6 +288,7 @@
 			${READ_STRUCTURE} \
 			${FCID} \
 			${RUN_FOLDER}
+			# ${SEQ_CENTER}
 	}
 
 # create a function to do all of the above
@@ -310,7 +322,7 @@
 #Another email will be sent at the completion of each lane of the demux job.
 #Maybe TODO write a function to monitor and send an email when all lanes have completed.
 
-	printf "${SCRIPT_DIR}/PICARD_DEMUX_SUBMITTER.sh\n \
+	printf "${SUBMITTER_SCRIPT_PATH}/PICARD_DEMUX_SUBMITTER.sh\n \
 		has finished submitting at\n \
 		$(date)\n \
 		by $(whoami)\n \

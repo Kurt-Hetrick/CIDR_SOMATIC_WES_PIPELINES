@@ -35,6 +35,7 @@
 	READ_STRUCTURE=$8
 	FCID=$9
 	RUN_FOLDER_NAME=${10} # 146T8B9M8B146T
+	# SEQ_CENTER=${11}
 
 		RUN_SPLIT=$(echo ${RUN_FOLDER_NAME} \
 			| awk '{split($0,runbc,"_"); print runbc[2]":"runbc[3]":"}')
@@ -60,11 +61,13 @@ START_BCL2SAM=$(date '+%s')
 				CMD=${CMD}" BARCODES_DIR=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/BARCODES/"
 				CMD=${CMD}" READ_STRUCTURE=${READ_STRUCTURE}"
 				CMD=${CMD}" LANE=${LANE}"
-				CMD=${CMD}" NUM_PROCESSORS= -15"
+				# CMD=${CMD}" NUM_PROCESSORS= -15"
+				CMD=${CMD}" NUM_PROCESSORS=70"
 				CMD=${CMD}" LIBRARY_PARAMS=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID}/library_params.${LANE}.txt"
 				CMD=${CMD}" MOLECULAR_INDEX_TAG=RX"
 				CMD=${CMD}" RUN_BARCODE=${RUN_BARCODE}"
 				CMD=${CMD}" READ_GROUP_ID=${FCID}_${LANE}"
+				# CMD=${CMD}" SEQUENCING_CENTER=${SEQ_CENTER}"
 
 # write command line to file and execute the command line
 
@@ -81,7 +84,7 @@ START_BCL2SAM=$(date '+%s')
     #JOB_NAME, USER and SGE_STDERR_PATH are internal variables to the cluster environment
 
 		if
-			[["${SCRIPT_STATUS}" -ne 0 ]]
+			[[ "${SCRIPT_STATUS}" -ne 0 ]]
 		then
 			echo ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
 			>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
