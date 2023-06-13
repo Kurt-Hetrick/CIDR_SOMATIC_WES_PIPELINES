@@ -61,6 +61,7 @@ START_DOC_TARGET=`date '+%s'` # capture time process starts for wall clock track
 		CMD=${CMD}" --summaryCoverageThreshold 20"
 		CMD=${CMD}" --summaryCoverageThreshold 30"
 		CMD=${CMD}" --summaryCoverageThreshold 50"
+		CMD=${CMD}" --summaryCoverageThreshold 100"
 	CMD=${CMD}" --out ${CORE_PATH}/${PROJECT}/REPORTS/DEPTH_OF_COVERAGE/TARGET/${SM_TAG}.TARGET_BED"
 	##### MOVE AND RENAME OUTPUTS
 	# COUNT OF BASES AT "X" LEVEL OF COVERAGE

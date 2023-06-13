@@ -273,7 +273,7 @@
 			-l excl=true \
 			-R y \
 			-m e \
-			-M foo \
+			-M ${SEND_TO} \
 		-N E.BCL2SAM_${SEQ_PROJECT}_${FCID}_${LANE} \
 			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-E.BCL2SAM.log \
 		-hold_jid D.XTRACT.BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
