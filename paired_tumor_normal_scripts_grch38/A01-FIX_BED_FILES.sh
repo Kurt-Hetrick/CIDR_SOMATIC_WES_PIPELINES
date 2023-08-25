@@ -50,6 +50,8 @@
 
 			awk 1 ${CORE_PATH}/${TUMOR_PROJECT}/BED_Files/${BAIT_BED}.bed \
 				| sed -r 's/\r//g ; s/[[:space:]]+/\t/g' \
+				| sort -V -k 1,1 -k 2,2n -k 3,3n \
+				| grep -v "chrM" \
 			>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}.bed
 
 	# FIX THE TARGET BED FILE
@@ -60,6 +62,8 @@
 					
 			awk 1 ${CORE_PATH}/${TUMOR_PROJECT}/BED_Files/${TARGET_BED}.bed \
 				| sed -r 's/\r//g ; s/[[:space:]]+/\t/g' \
+				| sort -V -k 1,1 -k 2,2n -k 3,3n \
+				| grep -v "chrM" \
 			>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${TARGET_BED}.bed
 
 # # MAKE PICARD INTERVAL FILES (1-based start) for bed files in the sample sheet
