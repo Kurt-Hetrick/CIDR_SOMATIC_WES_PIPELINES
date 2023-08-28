@@ -25,15 +25,16 @@
 # INPUT VARIABLES
 
 	UMI_CONTAINER=$1
-	QC_REPORT=$2
+	ALIGNMENT_CONTAINER=$2
+	QC_REPORT=$3
 		QC_REPORT_NAME=$(basename ${QC_REPORT} .csv)
-	CORE_PATH=$3
-	TUMOR_PROJECT=$4
-	TUMOR_INDIVIDUAL=$5
+	CORE_PATH=$4
+	TUMOR_PROJECT=$5
+	TUMOR_INDIVIDUAL=$6
 		NORMAL_SUBJECT_ID=$(echo ${TUMOR_INDIVIDUAL}_N)
-	TUMOR_SM_TAG=$6
-	TARGET_BED=$7
-	SUBMIT_STAMP=$8
+	TUMOR_SM_TAG=$7
+	BAIT_BED=$8
+	SUBMIT_STAMP=$9
 
 # GRAB NORMAL SM TAG, PROJECT FROM QC REPORT
 
@@ -65,22 +66,34 @@
 			| sort \
 			| uniq)
 
-## DO CONCORDANCE BETWEEN THE SEQUENCING QC VCFs FROM THE TUMOR TO IT'S MATCHED NORMAL
+## MERGE MUTECT2 STATS FILES TO BE USED IN FILTERING LATER
 
-START_HAPLOTYPE_CALLER_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tracking purposes.
+START_MERGE_MUTECT2_STATS=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 	# construct command line
-	# note that the bed file here is not a bed file b/c it is 1-based. so that's neat.
 
 		CMD="singularity exec ${UMI_CONTAINER} java -jar"
-			CMD=${CMD}" /picard/picard.jar"
-		CMD=${CMD}" GenotypeConcordance"
-			CMD=${CMD}" TRUTH_VCF=${CORE_PATH}/${NORMAL_PROJECT}/VCF/SINGLE_SAMPLE/${NORMAL_SM_TAG}.QC.vcf.gz"
-			CMD=${CMD}" TRUTH_SAMPLE=${NORMAL_SM_TAG}"
-			CMD=${CMD}" CALL_VCF=${CORE_PATH}/${TUMOR_PROJECT}/VCF/SINGLE_SAMPLE/${TUMOR_SM_TAG}.QC.vcf.gz"
-			CMD=${CMD}" CALL_SAMPLE=${TUMOR_SM_TAG}"
-		CMD=${CMD}" INTERVALS=${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${TARGET_BED}-picard.bed"
-		CMD=${CMD}" O=${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/CONCORDANCE_PAIRED/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_TARGET"
+			CMD=${CMD}" /gatk/gatk.jar"
+		CMD=${CMD}" MergeMutectStats"
+
+		# loop through natural sorted chromosome list to concatentate gvcf files.
+
+		for CHROMOSOME in $(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}.bed \
+				| sed -r 's/[[:space:]]+/\t/g' \
+				| sed 's/chr//g' \
+				| egrep "^[0-9]|^X|^Y" \
+				| cut -f 1 \
+				| sort -V \
+				| uniq \
+				| awk '{print "chr"$1}' \
+				| singularity exec ${ALIGNMENT_CONTAINER} datamash \
+					collapse 1 \
+				| sed 's/,/ /g');
+		do
+			CMD=${CMD}" -stats ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MUTECT2.${CHROMOSOME}.vcf.gz.stats"
+		done
+
+		CMD=${CMD}" --output ${CORE_PATH}/${TUMOR_PROJECT}/VCF/MUTECT2/STATS/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MUTECT2.stats"
 
 	# write command line to file and execute the command line
 
@@ -103,11 +116,11 @@ START_HAPLOTYPE_CALLER_CONCORDANCE=$(date '+%s') # capture time process starts f
 				exit ${SCRIPT_STATUS}
 			fi
 
-END_HAPLOTYPE_CALLER_CONCORDANCE=$(date '+%s') # capture time process ends for wall clock tracking purposes.
+END_MERGE_MUTECT2_STATS=$(date '+%s') # capture time process ends for wall clock tracking purposes.
 
 # write out timing metrics to file
 
-	echo ${TUMOR_INDIVIDUAL}_${TUMOR_PROJECT}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG},B01,HAPLOTYPE_CALLER_CONCORDANCE,${HOSTNAME},${START_HAPLOTYPE_CALLER_CONCORDANCE},${END_HAPLOTYPE_CALLER_CONCORDANCE} \
+	echo ${TUMOR_INDIVIDUAL}_${TUMOR_PROJECT}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG},C01,MERGE_MUTECT2_STATS,${HOSTNAME},${START_MERGE_MUTECT2_STATS},${END_MERGE_MUTECT2_STATS} \
 	>> ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/${TUMOR_PROJECT}_PAIRED_CALLING_WALL_CLOCK_TIMES.csv
 
 # exit with the signal from samtools bam to cram
