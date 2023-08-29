@@ -68,13 +68,13 @@
 
 ## MERGE MUTECT2 STATS FILES TO BE USED IN FILTERING LATER
 
-START_MERGE_MUTECT2_STATS=$(date '+%s') # capture time process starts for wall clock tracking purposes.
+START_LEARN_READ_ORIENT_MODEL=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 	# construct command line
 
 		CMD="singularity exec ${UMI_CONTAINER} java -jar"
 			CMD=${CMD}" /gatk/gatk.jar"
-		CMD=${CMD}" MergeMutectStats"
+		CMD=${CMD}" LearnReadOrientationModel"
 
 		# loop through natural sorted chromosome list to concatentate gvcf files.
 
@@ -90,10 +90,10 @@ START_MERGE_MUTECT2_STATS=$(date '+%s') # capture time process starts for wall c
 					collapse 1 \
 				| sed 's/,/ /g');
 		do
-			CMD=${CMD}" --stats ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MUTECT2.${CHROMOSOME}.vcf.gz.stats"
+			CMD=${CMD}" --input ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}.${CHROMOSOME}.F1R2.tar.gz"
 		done
 
-		CMD=${CMD}" --output ${CORE_PATH}/${TUMOR_PROJECT}/VCF/MUTECT2/STATS/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MUTECT2.stats"
+		CMD=${CMD}" --output ${CORE_PATH}/${TUMOR_PROJECT}/VCF/MUTECT2/READ_ORIENT_MODEL/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MUTECT2_FIR2.tar.gz"
 
 	# write command line to file and execute the command line
 
@@ -116,11 +116,11 @@ START_MERGE_MUTECT2_STATS=$(date '+%s') # capture time process starts for wall c
 				exit ${SCRIPT_STATUS}
 			fi
 
-END_MERGE_MUTECT2_STATS=$(date '+%s') # capture time process ends for wall clock tracking purposes.
+END_LEARN_READ_ORIENT_MODEL=$(date '+%s') # capture time process ends for wall clock tracking purposes.
 
 # write out timing metrics to file
 
-	echo ${TUMOR_INDIVIDUAL}_${TUMOR_PROJECT}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG},C01,MERGE_MUTECT2_STATS,${HOSTNAME},${START_MERGE_MUTECT2_STATS},${END_MERGE_MUTECT2_STATS} \
+	echo ${TUMOR_INDIVIDUAL}_${TUMOR_PROJECT}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG},C01,LEARN_READ_ORIENT_MODEL,${HOSTNAME},${START_LEARN_READ_ORIENT_MODEL},${END_LEARN_READ_ORIENT_MODEL} \
 	>> ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/${TUMOR_PROJECT}_PAIRED_CALLING_WALL_CLOCK_TIMES.csv
 
 # exit with the signal from samtools bam to cram
