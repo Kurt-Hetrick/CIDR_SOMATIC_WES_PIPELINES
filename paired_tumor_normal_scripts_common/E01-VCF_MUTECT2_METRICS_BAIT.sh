@@ -32,9 +32,11 @@
 	TUMOR_INDIVIDUAL=$5
 		NORMAL_SUBJECT_ID=$(echo ${TUMOR_INDIVIDUAL}_N)
 	TUMOR_SM_TAG=$6
-	REF_GENOME=$7
-	ALLELE_FRACTION_CUTOFF=$8
-	SUBMIT_STAMP=$9
+	REF_DICT=$7
+	BAIT_BED=$8
+	DBSNP=$9
+	THREAD_COUNT=${10}
+	SUBMIT_STAMP=${11}
 
 # GRAB NORMAL SM TAG, PROJECT FROM QC REPORT
 
@@ -66,23 +68,21 @@
 			| sort \
 			| uniq)
 
-## RUN MUTECT2
+## RUN VCF METRICS ON MUTECT2 VCF
 
-START_FILTER_MUTECT2=$(date '+%s') # capture time process starts for wall clock tracking purposes.
+START_VCF_METRICS_BAIT=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 	# construct command line
 
 		CMD="singularity exec ${UMI_CONTAINER} java -jar"
 			CMD=${CMD}" /gatk/gatk.jar"
-		CMD=${CMD}" FilterMutectCalls"
-			CMD=${CMD}" --reference ${REF_GENOME}"
-			CMD=${CMD}" --variant ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MUTECT2_RAW.vcf.gz"
-			CMD=${CMD}" --ob-priors ${CORE_PATH}/${TUMOR_PROJECT}/VCF/MUTECT2/READ_ORIENT_MODEL/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MUTECT2_FIR2.tar.gz"
-			CMD=${CMD}" --stats ${CORE_PATH}/${TUMOR_PROJECT}/VCF/MUTECT2/STATS/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MUTECT2.stats"
-			CMD=${CMD}" --tumor-segmentation  ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/GATK_CALC_TUMOR_CONTAM/${TUMOR_SM_TAG}.segments.table"
-			CMD=${CMD}" --contamination-table ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/GATK_CALC_TUMOR_CONTAM/${TUMOR_SM_TAG}.calculatetumorcontamination.table"
-			CMD=${CMD}" --min-allele-fraction ${ALLELE_FRACTION_CUTOFF}"
-		CMD=${CMD}" --output ${CORE_PATH}/${TUMOR_PROJECT}/VCF/MUTECT2/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}_MUTECT2.FILTERED.vcf.gz"
+		CMD=${CMD}" CollectVariantCallingMetrics"
+			CMD=${CMD}" --SEQUENCE_DICTIONARY ${REF_DICT}"
+			CMD=${CMD}" --INPUT ${CORE_PATH}/${TUMOR_PROJECT}/VCF/MUTECT2/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}_MUTECT2.FILTERED.vcf.gz"
+			CMD=${CMD}" --TARGET_INTERVALS ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}-picard.bed"
+			CMD=${CMD}" --DBSNP ${DBSNP}"
+			CMD=${CMD}" --THREAD_COUNT  ${THREAD_COUNT}"
+		CMD=${CMD}" --OUTPUT ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/VCF_METRICS/MUTECT2/BAIT/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}_BAIT"
 
 	# write command line to file and execute the command line
 
@@ -105,11 +105,11 @@ START_FILTER_MUTECT2=$(date '+%s') # capture time process starts for wall clock 
 				exit ${SCRIPT_STATUS}
 			fi
 
-END_FILTER_MUTECT2=$(date '+%s') # capture time process starts for wall clock tracking purposes.
+END_VCF_METRICS_BAIT=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 # write out timing metrics to file
 
-	echo ${TUMOR_INDIVIDUAL}_${TUMOR_PROJECT}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG},D01,FILTER_MUTECT2,${HOSTNAME},${START_FILTER_MUTECT2},${END_FILTER_MUTECT2} \
+	echo ${TUMOR_INDIVIDUAL}_${TUMOR_PROJECT}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG},D01,FILTER_MUTECT2,${HOSTNAME},${START_VCF_METRICS_BAIT},${END_VCF_METRICS_BAIT} \
 	>> ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/${TUMOR_PROJECT}_PAIRED_CALLING_WALL_CLOCK_TIMES.csv
 
 # exit with the signal from samtools bam to cram

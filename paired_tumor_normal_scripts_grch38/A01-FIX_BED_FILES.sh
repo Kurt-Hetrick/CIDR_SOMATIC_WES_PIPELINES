@@ -74,13 +74,13 @@
 # 		# made everything plus stranded b/c i don't think this information is used
 # 		# constructed locus name with chr name, start+1, stop
 
-# 	# bait bed
+	# bait bed
 
-# 		(grep "^@SQ" ${REF_DICT} \
-# 			; awk 'BEGIN {OFS="\t"} \
-# 				{print $1,($2+1),$3,"+",$1"_"($2+1)"_"$3}' \
-# 			${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED_NAME}.bed) \
-# 		>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED_NAME}-picard.bed
+		(grep "^@SQ" ${REF_DICT} \
+			; awk 'BEGIN {OFS="\t"} \
+				{print $1,($2+1),$3,"+",$1"_"($2+1)"_"$3}' \
+			${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}.bed) \
+		>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}-picard.bed
 
 	# target bed
 
