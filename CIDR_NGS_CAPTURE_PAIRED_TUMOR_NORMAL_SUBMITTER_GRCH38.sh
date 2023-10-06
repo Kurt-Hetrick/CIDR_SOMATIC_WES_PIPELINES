@@ -229,6 +229,7 @@
 	GNOMAD_AF_FREQ="/mnt/research/tools/PIPELINE_FILES/gatk_somatic/hg38/somatic-hg38_af-only-gnomad.hg38.vcf.gz"
 	REF_GENOME="/mnt/shared_resources/public_resources/GRCh38DH/GRCh38_full_analysis_set_plus_decoy_hla.fa"
 		REF_DICT=$(echo "${REF_GENOME%.*}".dict)
+	FUNCOTATOR_DATASOURCE="/mnt/research/tools/PIPELINE_FILES/gatk_somatic/funcotator/funcotator_dataSources.v1.7.20200521s"
 
 ##########################################################
 ##### GRAB COLUMN POSITIONS FOR HEADERS IN QC REPORT #####
@@ -287,7 +288,7 @@
 	{
 		mkdir -p \
 		${CORE_PATH}/${SEQ_PROJECT}/{COMMAND_LINES,LOGS} \
-		${CORE_PATH}/${SEQ_PROJECT}/REPORTS/{GATK_CALC_TUMOR_CONTAM,LAB_PREP_REPORTS,QC_REPORTS,QC_REPORT_PREP,RG_HEADER} \
+		${CORE_PATH}/${SEQ_PROJECT}/REPORTS/{GATK_CALC_TUMOR_CONTAM,LAB_PREP_REPORTS,MAF,QC_REPORTS,QC_REPORT_PREP,RG_HEADER} \
 		${CORE_PATH}/${SEQ_PROJECT}/REPORTS/{CONCORDANCE,CONCORDANCE_PAIRED} \
 		${CORE_PATH}/${SEQ_PROJECT}/REPORTS/VCF_METRICS/MUTECT2/{BAIT,TARGET} \
 		${CORE_PATH}/${SEQ_PROJECT}/TEMP/${QC_REPORT_NAME} \
@@ -595,6 +596,31 @@
 			${SUBMIT_STAMP}
 	}
 
+#######################################################
+# FUNCOTATOR MAF ######################################
+# ONLY ON PASSING VARIANTS ############################
+# FUNCOTATOR FAILS ON VARIANTS THAT DON'T PASS FILTER #
+#######################################################
+
+	FUNCOTATOR_MAF ()
+	{
+		echo \
+		qsub \
+			${STD_QUEUE_QSUB_ARGS} \
+		-N E03-FUNCOTATOR_MAF_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_FUNCOTATOR_MAF.log \
+		-hold_jid D01-FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+		${COMMON_SCRIPT_DIR}/E03-FUNCOTATOR_MAF.sh \
+			${UMI_CONTAINER} \
+			${QC_REPORT} \
+			${CORE_PATH} \
+			${TUMOR_PROJECT} \
+			${TUMOR_INDIVIDUAL} \
+			${TUMOR_SM_TAG} \
+			${REF_GENOME} \
+			${FUNCOTATOR_DATASOURCE} \
+			${SUBMIT_STAMP}
+	}
 
 #################################
 ### EXECUTE ALL OF THE THINGS ###
@@ -639,9 +665,7 @@
 			HOLD_ID_PATH_MERGE="${HOLD_ID_PATH_MERGE}B02-MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT}_chr${CHROMOSOME},"
 
 			HOLD_ID_PATH_MERGE=$(echo ${HOLD_ID_PATH_MERGE} | sed 's/@/_/g')
-
 		done
-
 			MERGE_MUTECT2_STATS
 			echo sleep 0.1s
 			LEARN_READ_ORIENTATION_MODEL
@@ -653,6 +677,8 @@
 			VCF_MUTECT2_METRICS_BAIT
 			echo sleep 0.1s
 			VCF_MUTECT2_METRICS_TARGET
+			echo sleep 0.1s
+			FUNCOTATOR_MAF
 			echo sleep 0.1s
 	done
 
