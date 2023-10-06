@@ -6,7 +6,16 @@
 
 	QC_REPORT=$1
 		QC_REPORT_NAME=$(basename ${QC_REPORT} .csv)
-	PRIORITY=$2 # optional. if no 2nd argument present then the default is -15
+	ALLELE_FRACTION_CUTOFF=$2 # AS A FRACTION. THAT IS 0.10 IS 10%. DEFAULT IS 0.10. I think using 0.1 or 0.10 should be fine.
+
+		# if there is no 2nd argument present then use the number for priority
+			if
+				[[ ! ${ALLELE_FRACTION_CUTOFF} ]]
+			then
+				ALLELE_FRACTION_CUTOFF="0.10"
+			fi
+
+	PRIORITY=$3 # optional. if no 2nd argument present then the default is -15
 
 		# if there is no 2nd argument present then use the number for priority
 			if
@@ -503,6 +512,30 @@
 				${SUBMIT_STAMP}
 		}
 
+	######################
+	# FILTER MUTECT2 VCF #
+	######################
+
+		FILTER_MUTECT2_VCF ()
+		{
+			echo \
+			qsub \
+				${STD_QUEUE_QSUB_ARGS} \
+			-N D01_FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+				-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_FILTER_MUTECT2_VCF.log \
+			-hold_jid C01-MERGE_MUTECT2_STATS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT},C02-LEARN_READ_ORIENTATION_MODEL_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT},C03-CONCATENATE_RAW_MUTECT2_VCF_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+			${COMMON_SCRIPT_DIR}/D01-FILTER_MUTECT2_VCF.sh \
+				${UMI_CONTAINER} \
+				${QC_REPORT} \
+				${CORE_PATH} \
+				${TUMOR_PROJECT} \
+				${TUMOR_INDIVIDUAL} \
+				${TUMOR_SM_TAG} \
+				${REF_GENOME} \
+				${ALLELE_FRACTION_CUTOFF} \
+				${SUBMIT_STAMP}
+		}
+
 for PI_TUMOR_INDIVIDUAL_NAME in \
 	$(awk \
 		-v SUBJECT_ID_COLUMN_POSITION="$SUBJECT_ID_COLUMN_POSITION" \
@@ -562,14 +595,8 @@ do
 		echo sleep 0.1s
 		CONCATENATE_RAW_MUTECT2_VCF
 		echo sleep 0.1s
-		# FILTER_MUTECT2
-		# echo sleep 0.1s
-		# FILTER_MUTECT2_AF5
-		# echo sleep 0.1s
-		# FILTER_MUTECT2_AF10
-		# echo sleep 0.1s
-		# FILTER_MUTECT2_AF20
-		# echo sleep 0.1s
+		FILTER_MUTECT2_VCF
+		echo sleep 0.1s
 		# VCF_METRICS_BAIT
 		# echo sleep 0.1s
 		# VCF_METRICS_BAIT_AF10
