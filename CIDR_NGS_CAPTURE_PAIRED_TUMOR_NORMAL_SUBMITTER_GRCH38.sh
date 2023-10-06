@@ -405,7 +405,7 @@
 		echo \
 		qsub \
 			${STD_QUEUE_QSUB_ARGS} \
-		-N B01_CONCORDANCE_HAPLOTYPE_CALLER_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+		-N B01-CONCORDANCE_HAPLOTYPE_CALLER_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
 			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_CONCORDANCE_TO_NORMAL_HAPLOTYPE_CALLER_TARGET.log \
 		${COMMON_SCRIPT_DIR}/B01-CONCORDANCE_HAPLOTYPE_CALLER.sh \
 			${UMI_CONTAINER} \
@@ -543,9 +543,9 @@
 			${SUBMIT_STAMP}
 	}
 
-######################
-# FILTER MUTECT2 VCF #
-######################
+###############################
+# ON BAIT MUTECT2 VCF METRICS #
+###############################
 
 	VCF_MUTECT2_METRICS_BAIT ()
 	{
@@ -568,6 +568,33 @@
 			${THREAD_COUNT} \
 			${SUBMIT_STAMP}
 	}
+
+#################################
+# ON TARGET MUTECT2 VCF METRICS #
+#################################
+
+	VCF_MUTECT2_METRICS_TARGET ()
+	{
+		echo \
+		qsub \
+			${STD_QUEUE_QSUB_ARGS} \
+		-N E02-VCF_MUTECT2_METRICS_TARGET_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_VCF_MUTECT2_METRICS_TARGET.log \
+		-hold_jid D01-FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+		${COMMON_SCRIPT_DIR}/E02-VCF_MUTECT2_METRICS_TARGET.sh \
+			${UMI_CONTAINER} \
+			${QC_REPORT} \
+			${CORE_PATH} \
+			${TUMOR_PROJECT} \
+			${TUMOR_INDIVIDUAL} \
+			${TUMOR_SM_TAG} \
+			${REF_DICT} \
+			${TARGET_BED} \
+			${DBSNP} \
+			${THREAD_COUNT} \
+			${SUBMIT_STAMP}
+	}
+
 
 #################################
 ### EXECUTE ALL OF THE THINGS ###
@@ -625,8 +652,8 @@
 			echo sleep 0.1s
 			VCF_MUTECT2_METRICS_BAIT
 			echo sleep 0.1s
-			# VCF_METRICS_TARGET
-			# echo sleep 0.1s
+			VCF_MUTECT2_METRICS_TARGET
+			echo sleep 0.1s
 	done
 
 # keep this b/c I think I'm going to need it later
