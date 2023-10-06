@@ -411,186 +411,190 @@
 			${SUBMIT_STAMP}
 	}
 
-	#######################################################
-	# run mutect2 #########################################
-	# this runs MUCH slower on non-avx machines ###########
-	# this is intended to be scattered across chromosomes #
-	#######################################################
+#######################################################
+# run mutect2 #########################################
+# this runs MUCH slower on non-avx machines ###########
+# this is intended to be scattered across chromosomes #
+#######################################################
 
-		CALL_MUTECT2 ()
-		{
-			echo \
-			qsub \
-				${AVX_QUEUE_QSUB_ARGS} \
-			-N B02-MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT}_chr${CHROMOSOME} \
-				-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-MUTECT2_chr${CHROMOSOME}.log \
-			-hold_jid A01-FIX_BED_FILES_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
-			${COMMON_SCRIPT_DIR}/B02-MUTECT2_SCATTER.sh \
-				${UMI_CONTAINER} \
-				${QC_REPORT} \
-				${CORE_PATH} \
-				${TUMOR_PROJECT} \
-				${TUMOR_INDIVIDUAL} \
-				${TUMOR_SM_TAG} \
-				${REF_GENOME} \
-				${GNOMAD_AF_FREQ} \
-				${BAIT_BED} \
-				chr${CHROMOSOME} \
-				${SUBMIT_STAMP}
-		}
+	CALL_MUTECT2 ()
+	{
+		echo \
+		qsub \
+			${AVX_QUEUE_QSUB_ARGS} \
+		-N B02-MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT}_chr${CHROMOSOME} \
+			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-MUTECT2_chr${CHROMOSOME}.log \
+		-hold_jid A01-FIX_BED_FILES_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+		${COMMON_SCRIPT_DIR}/B02-MUTECT2_SCATTER.sh \
+			${UMI_CONTAINER} \
+			${QC_REPORT} \
+			${CORE_PATH} \
+			${TUMOR_PROJECT} \
+			${TUMOR_INDIVIDUAL} \
+			${TUMOR_SM_TAG} \
+			${REF_GENOME} \
+			${GNOMAD_AF_FREQ} \
+			${BAIT_BED} \
+			chr${CHROMOSOME} \
+			${SUBMIT_STAMP}
+	}
 
-	###################################################
-	# MERGE THE MUTECT2 STATS FILE USED FOR FILTERING #
-	###################################################
+###################################################
+# MERGE THE MUTECT2 STATS FILE USED FOR FILTERING #
+###################################################
 
-		MERGE_MUTECT2_STATS ()
-		{
-			echo \
-			qsub \
-				${STD_QUEUE_QSUB_ARGS} \
-			-N C01-MERGE_MUTECT2_STATS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
-				-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_MERGE_MUTECT2_STATS.log \
-			${HOLD_ID_PATH_MERGE} \
-			${COMMON_SCRIPT_DIR}/C01-MERGE_MUTECT2_STATS.sh \
-				${UMI_CONTAINER} \
-				${ALIGNMENT_CONTAINER} \
-				${QC_REPORT} \
-				${CORE_PATH} \
-				${TUMOR_PROJECT} \
-				${TUMOR_INDIVIDUAL} \
-				${TUMOR_SM_TAG} \
-				${BAIT_BED} \
-				${SUBMIT_STAMP}
-		}
+	MERGE_MUTECT2_STATS ()
+	{
+		echo \
+		qsub \
+			${STD_QUEUE_QSUB_ARGS} \
+		-N C01-MERGE_MUTECT2_STATS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_MERGE_MUTECT2_STATS.log \
+		${HOLD_ID_PATH_MERGE} \
+		${COMMON_SCRIPT_DIR}/C01-MERGE_MUTECT2_STATS.sh \
+			${UMI_CONTAINER} \
+			${ALIGNMENT_CONTAINER} \
+			${QC_REPORT} \
+			${CORE_PATH} \
+			${TUMOR_PROJECT} \
+			${TUMOR_INDIVIDUAL} \
+			${TUMOR_SM_TAG} \
+			${BAIT_BED} \
+			${SUBMIT_STAMP}
+	}
 
-	###########################################################################
-	# LEARN THE READ ORIENTATION MODEL (FOR FFPE) BY GATHERING MUTECT2 OUTPUT #
-	###########################################################################
+###########################################################################
+# LEARN THE READ ORIENTATION MODEL (FOR FFPE) BY GATHERING MUTECT2 OUTPUT #
+###########################################################################
 
-		LEARN_READ_ORIENTATION_MODEL ()
-		{
-			echo \
-			qsub \
-				${STD_QUEUE_QSUB_ARGS} \
-			-N C02-LEARN_READ_ORIENTATION_MODEL_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
-				-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_LEARN_READ_ORIENTATION_MODEL.log \
-			${HOLD_ID_PATH_MERGE} \
-			${COMMON_SCRIPT_DIR}/C02-LEARN_READ_ORIENTATION_MODEL.sh \
-				${UMI_CONTAINER} \
-				${ALIGNMENT_CONTAINER} \
-				${QC_REPORT} \
-				${CORE_PATH} \
-				${TUMOR_PROJECT} \
-				${TUMOR_INDIVIDUAL} \
-				${TUMOR_SM_TAG} \
-				${BAIT_BED} \
-				${SUBMIT_STAMP}
-		}
+	LEARN_READ_ORIENTATION_MODEL ()
+	{
+		echo \
+		qsub \
+			${STD_QUEUE_QSUB_ARGS} \
+		-N C02-LEARN_READ_ORIENTATION_MODEL_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_LEARN_READ_ORIENTATION_MODEL.log \
+		${HOLD_ID_PATH_MERGE} \
+		${COMMON_SCRIPT_DIR}/C02-LEARN_READ_ORIENTATION_MODEL.sh \
+			${UMI_CONTAINER} \
+			${ALIGNMENT_CONTAINER} \
+			${QC_REPORT} \
+			${CORE_PATH} \
+			${TUMOR_PROJECT} \
+			${TUMOR_INDIVIDUAL} \
+			${TUMOR_SM_TAG} \
+			${BAIT_BED} \
+			${SUBMIT_STAMP}
+	}
 
-	###########################
-	# CONCATENATE MUTECT2 VCF #
-	###########################
+###########################
+# CONCATENATE MUTECT2 VCF #
+###########################
 
-		CONCATENATE_RAW_MUTECT2_VCF ()
-		{
-			echo \
-			qsub \
-				${STD_QUEUE_QSUB_ARGS} \
-			-N C03-CONCATENATE_RAW_MUTECT2_VCF_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
-				-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_CONCATENATE_RAW_MUTECT2_VCF.log \
-			${HOLD_ID_PATH_MERGE} \
-			${COMMON_SCRIPT_DIR}/C03-CONCATENATE_RAW_MUTECT2_VCF.sh \
-				${GATK_3_7_0_CONTAINER} \
-				${ALIGNMENT_CONTAINER} \
-				${QC_REPORT} \
-				${CORE_PATH} \
-				${TUMOR_PROJECT} \
-				${TUMOR_INDIVIDUAL} \
-				${TUMOR_SM_TAG} \
-				${REF_GENOME} \
-				${BAIT_BED} \
-				${SUBMIT_STAMP}
-		}
+	CONCATENATE_RAW_MUTECT2_VCF ()
+	{
+		echo \
+		qsub \
+			${STD_QUEUE_QSUB_ARGS} \
+		-N C03-CONCATENATE_RAW_MUTECT2_VCF_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_CONCATENATE_RAW_MUTECT2_VCF.log \
+		${HOLD_ID_PATH_MERGE} \
+		${COMMON_SCRIPT_DIR}/C03-CONCATENATE_RAW_MUTECT2_VCF.sh \
+			${GATK_3_7_0_CONTAINER} \
+			${ALIGNMENT_CONTAINER} \
+			${QC_REPORT} \
+			${CORE_PATH} \
+			${TUMOR_PROJECT} \
+			${TUMOR_INDIVIDUAL} \
+			${TUMOR_SM_TAG} \
+			${REF_GENOME} \
+			${BAIT_BED} \
+			${SUBMIT_STAMP}
+	}
 
-	######################
-	# FILTER MUTECT2 VCF #
-	######################
+######################
+# FILTER MUTECT2 VCF #
+######################
 
-		FILTER_MUTECT2_VCF ()
-		{
-			echo \
-			qsub \
-				${STD_QUEUE_QSUB_ARGS} \
-			-N D01_FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
-				-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_FILTER_MUTECT2_VCF.log \
-			-hold_jid C01-MERGE_MUTECT2_STATS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT},C02-LEARN_READ_ORIENTATION_MODEL_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT},C03-CONCATENATE_RAW_MUTECT2_VCF_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
-			${COMMON_SCRIPT_DIR}/D01-FILTER_MUTECT2_VCF.sh \
-				${UMI_CONTAINER} \
-				${QC_REPORT} \
-				${CORE_PATH} \
-				${TUMOR_PROJECT} \
-				${TUMOR_INDIVIDUAL} \
-				${TUMOR_SM_TAG} \
-				${REF_GENOME} \
-				${ALLELE_FRACTION_CUTOFF} \
-				${SUBMIT_STAMP}
-		}
+	FILTER_MUTECT2_VCF ()
+	{
+		echo \
+		qsub \
+			${STD_QUEUE_QSUB_ARGS} \
+		-N D01_FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_FILTER_MUTECT2_VCF.log \
+		-hold_jid C01-MERGE_MUTECT2_STATS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT},C02-LEARN_READ_ORIENTATION_MODEL_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT},C03-CONCATENATE_RAW_MUTECT2_VCF_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT} \
+		${COMMON_SCRIPT_DIR}/D01-FILTER_MUTECT2_VCF.sh \
+			${UMI_CONTAINER} \
+			${QC_REPORT} \
+			${CORE_PATH} \
+			${TUMOR_PROJECT} \
+			${TUMOR_INDIVIDUAL} \
+			${TUMOR_SM_TAG} \
+			${REF_GENOME} \
+			${ALLELE_FRACTION_CUTOFF} \
+			${SUBMIT_STAMP}
+	}
 
-for PI_TUMOR_INDIVIDUAL_NAME in \
-	$(awk \
-		-v SUBJECT_ID_COLUMN_POSITION="$SUBJECT_ID_COLUMN_POSITION" \
-		'BEGIN {FS=",";OFS="\t"} \
-		{split($SUBJECT_ID_COLUMN_POSITION,SUBJECT,"_"); \
-		print $SUBJECT_ID_COLUMN_POSITION,SUBJECT[2]}' \
-	${QC_REPORT} \
-	| awk '$2=="T"||$2=="C"||$2=="S" \
-		{print $1}' \
-	| sort \
-	| uniq)
-do
-	CREATE_TUMOR_SAMPLE_ARRAY
-	MAKE_SAMPLE_DIRECTORIES
-	FIX_BED_FILES
-	echo sleep 0.1s
-	CONCORDANCE_HAPLOTYPE_CALLER_CALLS
-	echo sleep 0.1s
+#################################
+### EXECUTE ALL OF THE THINGS ###
+#################################
 
-	HOLD_ID_PATH_MERGE="-hold_jid "
-
-	for CHROMOSOME in $(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
-		${CORE_PATH}/${TUMOR_PROJECT}/BED_Files/${BAIT_BED}.bed \
-		| sed -r 's/[[:space:]]+/\t/g' \
-		| sed 's/chr//g' \
-		| egrep "^[0-9]|^X|^Y" \
-		| cut -f 1 \
-		| sort -V \
-		| uniq \
-		| singularity exec ${ALIGNMENT_CONTAINER} datamash \
-			collapse 1 \
-		| sed 's/,/ /g');
+	for PI_TUMOR_INDIVIDUAL_NAME in \
+		$(awk \
+			-v SUBJECT_ID_COLUMN_POSITION="$SUBJECT_ID_COLUMN_POSITION" \
+			'BEGIN {FS=",";OFS="\t"} \
+			{split($SUBJECT_ID_COLUMN_POSITION,SUBJECT,"_"); \
+			print $SUBJECT_ID_COLUMN_POSITION,SUBJECT[2]}' \
+		${QC_REPORT} \
+		| awk '$2=="T"||$2=="C"||$2=="S" \
+			{print $1}' \
+		| sort \
+		| uniq)
 	do
-		CALL_MUTECT2
+		CREATE_TUMOR_SAMPLE_ARRAY
+		MAKE_SAMPLE_DIRECTORIES
+		FIX_BED_FILES
+		echo sleep 0.1s
+		CONCORDANCE_HAPLOTYPE_CALLER_CALLS
 		echo sleep 0.1s
 
-		HOLD_ID_PATH_MERGE="${HOLD_ID_PATH_MERGE}B02-MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT}_chr${CHROMOSOME},"
+		HOLD_ID_PATH_MERGE="-hold_jid "
 
-		HOLD_ID_PATH_MERGE=$(echo ${HOLD_ID_PATH_MERGE} | sed 's/@/_/g')
+		for CHROMOSOME in $(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			${CORE_PATH}/${TUMOR_PROJECT}/BED_Files/${BAIT_BED}.bed \
+			| sed -r 's/[[:space:]]+/\t/g' \
+			| sed 's/chr//g' \
+			| egrep "^[0-9]|^X|^Y" \
+			| cut -f 1 \
+			| sort -V \
+			| uniq \
+			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
+				collapse 1 \
+			| sed 's/,/ /g');
+		do
+			CALL_MUTECT2
+			echo sleep 0.1s
 
+			HOLD_ID_PATH_MERGE="${HOLD_ID_PATH_MERGE}B02-MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${TUMOR_PROJECT}_chr${CHROMOSOME},"
+
+			HOLD_ID_PATH_MERGE=$(echo ${HOLD_ID_PATH_MERGE} | sed 's/@/_/g')
+
+		done
+
+			MERGE_MUTECT2_STATS
+			echo sleep 0.1s
+			LEARN_READ_ORIENTATION_MODEL
+			echo sleep 0.1s
+			CONCATENATE_RAW_MUTECT2_VCF
+			echo sleep 0.1s
+			FILTER_MUTECT2_VCF
+			echo sleep 0.1s
+			# VCF_METRICS_BAIT
+			# echo sleep 0.1s
+			# VCF_METRICS_TARGET
+			# echo sleep 0.1s
 	done
-
-		MERGE_MUTECT2_STATS
-		echo sleep 0.1s
-		LEARN_READ_ORIENTATION_MODEL
-		echo sleep 0.1s
-		CONCATENATE_RAW_MUTECT2_VCF
-		echo sleep 0.1s
-		FILTER_MUTECT2_VCF
-		echo sleep 0.1s
-		# VCF_METRICS_BAIT
-		# echo sleep 0.1s
-		# VCF_METRICS_TARGET
-		# echo sleep 0.1s
-done
 
 # keep this b/c I think I'm going to need it later
 
