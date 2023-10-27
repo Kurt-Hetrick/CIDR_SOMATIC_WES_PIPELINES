@@ -71,16 +71,16 @@
 ##### QC REPORT PREP FOR THE TUMOR SAMPLE #####
 ###############################################
 
-	##########################################################################################################
-	### Grabbing the BAM header (for RG ID,PU,LB,etc) ########################################################
-	##########################################################################################################
-	### THIS IS THE HEADER ###################################################################################
-	### "PROJECT","TUMOR INDIVIDUAL","SM_TAG","SAMPLE_TYPE","RG_PU","LIBRARY" ################################
-	### "LIBRARY_PLATE","LIBRARY_WELL","LIBRARY_ROW","LIBRARY_COLUMN" ########################################
-	### "HYB_PLATE","HYB_WELL","HYB_ROW","HYB_COLUMN" ########################################################
-	### "CRAM_PIPELINE_VERSION","SEQUENCING_PLATFORM","SEQUENCER_MODEL" ######################################
-	### "EXEMPLAR_DATE","BAIT_BED_FILE","TARGET_BED_FILE","TITV_BED_FILE" ####################################
-	##########################################################################################################
+	#########################################################################
+	### Grabbing the BAM header (for RG ID,PU,LB,etc) #######################
+	#########################################################################
+	### THIS IS THE HEADER ##################################################
+	### "PROJECT","INDIVIDUAL","SM_TAG","SAMPLE_TYPE","RG_PU","LIBRARY" #####
+	### "LIBRARY_PLATE","LIBRARY_WELL","LIBRARY_ROW","LIBRARY_COLUMN" #######
+	### "HYB_PLATE","HYB_WELL","HYB_ROW","HYB_COLUMN" #######################
+	### "CRAM_PIPELINE_VERSION","SEQUENCING_PLATFORM","SEQUENCER_MODEL" #####
+	### "EXEMPLAR_DATE","BAIT_BED_FILE","TARGET_BED_FILE","TITV_BED_FILE" ###
+	#########################################################################
 
 		if
 			[ -f ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/RG_HEADER/${TUMOR_SM_TAG}.RG_HEADER.txt ]
@@ -296,30 +296,30 @@
 				>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 
-	###########################################################################################
-	### SOMATIC VARIANT METRICS ON BAIT #######################################################
-	###########################################################################################
-	### THIS IS THE HEADER ####################################################################
-	### SOMATIC_TOTAL_SNPS_ON_BAIT,SOMATIC_NUM_IN_DB_SNP_ON_BAIT,NOVEL_SNPS_ON_BAIT ###########
-	### SOMATIC_FILTERED_SNPS_ON_BAIT,PCT_DBSNP,SOMATIC_TOTAL_INDELS_ON_BAIT, #################
-	### SOMATIC_NOVEL_INDELS_ON_BAIT,SOMATIC_FILTERED_INDELS_ON_BAIT, #########################
-	### SOMATIC_PCT_DBSNP_INDELS_ON_BAIT,SOMATIC_NUM_IN_DB_SNP_INDELS_ON_BAIT #################
-	### SOMATIC_TOTAL_MULTIALLELIC_SNPS_ON_BAIT,SOMATIC_NUM_IN_DB_SNP_MULTIALLELIC_ON_BAIT, ###
-	### SOMATIC_TOTAL_COMPLEX_INDELS_ON_BAIT,SOMATIC_NUM_IN_DB_SNP_COMPLEX_INDELS_ON_BAIT, ####
-	### SOMATIC_SNP_REFERENCE_BIAS_ON_BAIT ####################################################
-	###########################################################################################
+	#############################################################################################
+	### SOMATIC VARIANT METRICS ON BAIT #########################################################
+	#############################################################################################
+	### THIS IS THE HEADER ######################################################################
+	### SOMATIC_TOTAL_SNPS_ON_BAIT,SOMATIC_NUM_IN_DB_SNP_ON_BAIT,SOMATIC_NOVEL_SNPS_ON_BAIT #####
+	### SOMATIC_FILTERED_SNPS_ON_BAIT,SOMATIC_PCT_DBSNP_ON_BAIT,SOMATIC_TOTAL_INDELS_ON_BAIT, ###
+	### SOMATIC_NOVEL_INDELS_ON_BAIT,SOMATIC_FILTERED_INDELS_ON_BAIT, ###########################
+	### SOMATIC_PCT_DBSNP_INDELS_ON_BAIT,SOMATIC_NUM_IN_DB_SNP_INDELS_ON_BAIT ###################
+	### SOMATIC_TOTAL_MULTIALLELIC_SNPS_ON_BAIT,SOMATIC_NUM_IN_DB_SNP_MULTIALLELIC_ON_BAIT, #####
+	### SOMATIC_TOTAL_COMPLEX_INDELS_ON_BAIT,SOMATIC_NUM_IN_DB_SNP_COMPLEX_INDELS_ON_BAIT, ######
+	### SOMATIC_SNP_REFERENCE_BIAS_ON_BAIT ######################################################
+	#############################################################################################
 
 		if
 			[[ ! -f ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/VCF_METRICS/MUTECT2/BAIT/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}_BAIT.variant_calling_summary_metrics ]]
 		then
-			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 				| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 					transpose \
 			>> ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}.QC_REPORT_TEMP.txt
 		else
 			awk 'BEGIN {OFS="\t"} \
 				NR==8 \
-				{print $1,$2,$3,$4,$5*100,$8,$9,$10,$11*100,$15,$16,$17,$18,$19}' \
+				{print $1,$2,$3,$4,$5*100,$8,$9,$10,$11*100,$12,$15,$16,$17,$18,$19}' \
 			${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/VCF_METRICS/MUTECT2/BAIT/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}_BAIT.variant_calling_summary_metrics \
 				| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 					transpose \
@@ -342,14 +342,14 @@
 		if
 			[[ ! -f ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/VCF_METRICS/MUTECT2/TARGET/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}_TARGET.variant_calling_summary_metrics ]]
 		then
-			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 				| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 					transpose \
 			>> ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}.QC_REPORT_TEMP.txt
 		else
 			awk 'BEGIN {OFS="\t"} \
 				NR==8 \
-				{print $1,$2,$3,$4,$5*100,$8,$9,$10,$11*100,$15,$16,$17,$18,$19}' \
+				{print $1,$2,$3,$4,$5*100,$8,$9,$10,$11*100,$12,$15,$16,$17,$18,$19}' \
 			${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/VCF_METRICS/MUTECT2/TARGET/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}_TARGET.variant_calling_summary_metrics \
 				| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 					transpose \
@@ -1188,16 +1188,16 @@
 ##### QC REPORT PREP FOR THE NORMAL SAMPLE #####
 ################################################
 
-	##########################################################################################################
-	### Grabbing the BAM header (for RG ID,PU,LB,etc) ########################################################
-	##########################################################################################################
-	### THIS IS THE HEADER ###################################################################################
-	### "PROJECT","TUMOR INDIVIDUAL","SM_TAG","SAMPLE_TYPE","RG_PU","LIBRARY" ################################
-	### "LIBRARY_PLATE","LIBRARY_WELL","LIBRARY_ROW","LIBRARY_COLUMN" ########################################
-	### "HYB_PLATE","HYB_WELL","HYB_ROW","HYB_COLUMN" ########################################################
-	### "CRAM_PIPELINE_VERSION","SEQUENCING_PLATFORM","SEQUENCER_MODEL" ######################################
-	### "EXEMPLAR_DATE","BAIT_BED_FILE","TARGET_BED_FILE","TITV_BED_FILE" ####################################
-	##########################################################################################################
+	#########################################################################
+	### Grabbing the BAM header (for RG ID,PU,LB,etc) #######################
+	#########################################################################
+	### THIS IS THE HEADER ##################################################
+	### "PROJECT","INDIVIDUAL","SM_TAG","SAMPLE_TYPE","RG_PU","LIBRARY" #####
+	### "LIBRARY_PLATE","LIBRARY_WELL","LIBRARY_ROW","LIBRARY_COLUMN" #######
+	### "HYB_PLATE","HYB_WELL","HYB_ROW","HYB_COLUMN" #######################
+	### "CRAM_PIPELINE_VERSION","SEQUENCING_PLATFORM","SEQUENCER_MODEL" #####
+	### "EXEMPLAR_DATE","BAIT_BED_FILE","TARGET_BED_FILE","TITV_BED_FILE" ###
+	#########################################################################
 
 		if
 			[ -f ${CORE_PATH}/${NORMAL_PROJECT}/REPORTS/RG_HEADER/${NORMAL_SM_TAG}.RG_HEADER.txt ]
@@ -1428,7 +1428,7 @@
 
 		# THIS IS THE NORMAL SO THE ASSUMPTION IS THAT THERE ARE NO SOMATIC VARIANTS
 
-			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 				| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 					transpose \
 			>> ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}.QC_REPORT_TEMP.txt
@@ -1448,7 +1448,7 @@
 
 		# THIS IS THE NORMAL SO THE ASSUMPTION IS THAT THERE ARE NO SOMATIC VARIANTS
 
-			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 				| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 					transpose \
 			>> ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}.QC_REPORT_TEMP.txt
@@ -2316,14 +2316,14 @@
 		cat ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}.QC_REPORT_TEMP.txt \
 			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 				transpose \
-		>| ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/QC_REPORT_PREP_PAIRED/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}.txt
+		>| ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/QC_REPORT_PREP_PAIRED/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}.PAIRED_QC_REPORT_PREP.txt
 
 	# NORMAL
 
 		cat ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}.QC_REPORT_TEMP.txt \
 			| singularity exec ${ALIGNMENT_CONTAINER} datamash \
 				transpose \
-		>| ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/QC_REPORT_PREP_PAIRED/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}.txt
+		>| ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/QC_REPORT_PREP_PAIRED/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}.PAIRED_QC_REPORT_PREP.txt
 
 
 ###########################################
