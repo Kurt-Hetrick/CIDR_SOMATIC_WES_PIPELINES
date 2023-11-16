@@ -32,9 +32,13 @@
 
 		CORE_PATH="/mnt/research/active"
 
-	# Directory where NovaSeqa runs are located.
+	# Directory where NovaSeq runs are located.
 
 		NOVASEQ_REPO="/mnt/instrument_files/novaseq"
+
+	# Directory where NovaSeqX runs are located.
+
+		NOVASEQX_REPO="/mnt/instrument_files/novaseqx"
 
 	# used for tracking in the read group header of the cram file
 
@@ -196,7 +200,7 @@
 		
 		SEQ_CENTER=${FCID_ARRAY[1]}
 
-		RUN_FOLDER=$(ls ${NOVASEQ_REPO} \
+		RUN_FOLDER=$(ls -d ${NOVASEQ_REPO}/* ${NOVASEQX_REPO}/* \
 			| grep ${FCID})
 
 		mkdir -p \
@@ -225,14 +229,12 @@
 		${SCRIPT_DIR}/EXTRACT_PARAMS_4_PICARD.sh \
 			${UMI_CONTAINER} \
 			${CORE_PATH} \
-			${NOVASEQ_REPO}/${RUN_FOLDER} \
 			${SEQ_PROJECT} \
 			${LANE} \
 			${SAMPLE_SHEET} \
 			${SUBMIT_STAMP} \
 			${READ_STRUCTURE} \
 			${FCID} \
-			${RUN_FOLDER} \
 			${IEM_SAMPLE_SHEET}
 	}
 
@@ -252,14 +254,13 @@
 		${SCRIPT_DIR}/D.XTRACT.BARCODES.sh \
 			${UMI_CONTAINER} \
 			${CORE_PATH} \
-			${NOVASEQ_REPO}/${RUN_FOLDER} \
+			${RUN_FOLDER} \
 			${SEQ_PROJECT} \
 			${LANE} \
 			${SAMPLE_SHEET} \
 			${SUBMIT_STAMP} \
 			${READ_STRUCTURE} \
-			${FCID} \
-			${RUN_FOLDER}
+			${FCID}
 	}
 
 #Function to create QSUB commands to run Picard's IlluminaBasecallsToSam
@@ -280,14 +281,13 @@
 		${SCRIPT_DIR}/E.BCL2SAM.sh \
 			${UMI_CONTAINER} \
 			${CORE_PATH} \
-			${NOVASEQ_REPO}/${RUN_FOLDER} \
+			${RUN_FOLDER} \
 			${SEQ_PROJECT} \
 			${LANE} \
 			${SAMPLE_SHEET} \
 			${SUBMIT_STAMP} \
 			${READ_STRUCTURE} \
-			${FCID} \
-			${RUN_FOLDER}
+			${FCID}
 			# ${SEQ_CENTER}
 	}
 

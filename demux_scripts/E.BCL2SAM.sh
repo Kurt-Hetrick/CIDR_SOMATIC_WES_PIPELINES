@@ -27,19 +27,18 @@
 	UMI_CONTAINER=$1
 	CORE_PATH=$2
 	RUN_FOLDER=$3
+		RUN_SPLIT=$(basename ${RUN_FOLDER} \
+			| awk '{split($0,runbc,"_"); print runbc[2]":"runbc[3]":"}')
+		RUN_BARCODE=${RUN_SPLIT}${FCID}
 	PROJECT=$4
 	LANE=$5
 	SAMPLE_SHEET=$6
 		SAMPLE_SHEET_NAME=$(basename ${SAMPLE_SHEET} .csv)
 	SUBMIT_STAMP=$7
-	READ_STRUCTURE=$8
+	READ_STRUCTURE=$8 # 146T8B9M8B146T
 	FCID=$9
-	RUN_FOLDER_NAME=${10} # 146T8B9M8B146T
 	# SEQ_CENTER=${11}
 
-		RUN_SPLIT=$(echo ${RUN_FOLDER_NAME} \
-			| awk '{split($0,runbc,"_"); print runbc[2]":"runbc[3]":"}')
-		RUN_BARCODE=${RUN_SPLIT}${FCID}
 		# Try limiting JVM to FreeMem -50g to avoid pegging the host
 		FREE_MEMG=$(awk '/MemAvailable/ { printf "%.0f", ($2/1024/1024)-50}' /proc/meminfo)
 

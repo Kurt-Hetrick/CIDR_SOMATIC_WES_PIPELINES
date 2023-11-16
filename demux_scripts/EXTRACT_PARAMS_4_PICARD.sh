@@ -25,21 +25,15 @@
 # INPUT VARIABLES
 
 	UMI_CONTAINER=$1
-
 	CORE_PATH=$2
-	RUN_FOLDER=$3 # what is this used for?
-	PROJECT=$4
-	LANE=$5
-	SAMPLE_SHEET=$6
+	PROJECT=$3
+	LANE=$4
+	SAMPLE_SHEET=$5
 		SAMPLE_SHEET_NAME=$(basename ${SAMPLE_SHEET} .csv)
-	SUBMIT_STAMP=$7
-	READ_STRUCTURE=$8 # example: 146T8B9M8B146T
-	FCID=$9
-	RUN_FOLDER_NAME=${10}
-		RUN_SPLIT=$(echo ${RUN_FOLDER_NAME} \
-				| awk '{split($0,runbc,"_"); print runbc[2]":"runbc[3]":"}')
-		RUN_BARCODE=${RUN_SPLIT}${FCID}
-	IEM_SAMPLESHEET=${11} #Illumina style sample sheet...Maybe we can extract one from the CSS version
+	SUBMIT_STAMP=$6
+	READ_STRUCTURE=$7 # example: 146T8B9M8B146T
+	FCID=$8
+	IEM_SAMPLESHEET=$9 #Illumina style sample sheet...Maybe we can extract one from the CSS version
 
 START_EXTRACT_BARCODES=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
