@@ -29,40 +29,11 @@
 		QC_REPORT_NAME=$(basename ${QC_REPORT} .csv)
 	CORE_PATH=$3
 	TUMOR_PROJECT=$4
-	TUMOR_INDIVIDUAL=$5
-		NORMAL_SUBJECT_ID=$(echo ${TUMOR_INDIVIDUAL}_N)
-	TUMOR_SM_TAG=$6
-	SUBMIT_STAMP=$7
-
-# GRAB NORMAL SM TAG, PROJECT FROM QC REPORT
-
-	PROJECT_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="PROJECT") print i}}' ${QC_REPORT})
-
-	SUBJECT_ID_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Subject_ID") print i}}' ${QC_REPORT})
-
-	SM_TAG_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="SM_TAG") print i}}' ${QC_REPORT})
-
-		NORMAL_SM_TAG=$(awk \
-			-v PROJECT_COLUMN_POSITION="$PROJECT_COLUMN_POSITION" \
-			-v SUBJECT_ID_COLUMN_POSITION="$SUBJECT_ID_COLUMN_POSITION" \
-			-v SM_TAG_COLUMN_POSITION="$SM_TAG_COLUMN_POSITION" \
-			'BEGIN {FS=",";OFS="\t"} \
-			$SUBJECT_ID_COLUMN_POSITION=="'${NORMAL_SUBJECT_ID}'" \
-			{print $SM_TAG_COLUMN_POSITION}' \
-		${QC_REPORT} \
-			| sort \
-			| uniq)
-
-		NORMAL_PROJECT=$(awk \
-			-v PROJECT_COLUMN_POSITION="$PROJECT_COLUMN_POSITION" \
-			-v SUBJECT_ID_COLUMN_POSITION="$SUBJECT_ID_COLUMN_POSITION" \
-			-v SM_TAG_COLUMN_POSITION="$SM_TAG_COLUMN_POSITION" \
-			'BEGIN {FS=",";OFS="\t"} \
-			$SUBJECT_ID_COLUMN_POSITION=="'${NORMAL_SUBJECT_ID}'" \
-			{print $PROJECT_COLUMN_POSITION}' \
-		${QC_REPORT} \
-			| sort \
-			| uniq)
+	NORMAL_PROJECT=$5
+	TUMOR_INDIVIDUAL=$6
+	TUMOR_SM_TAG=$7
+	NORMAL_SM_TAG=$8
+	SUBMIT_STAMP=$9
 
 # the next script in pipeline will cat everything together and add the header.
 # dirty validations count NF, if not X, then say haha you suck try again and don't write to cat file.

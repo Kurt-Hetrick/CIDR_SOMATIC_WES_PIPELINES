@@ -31,41 +31,11 @@
 	CORE_PATH=$4
 	TUMOR_PROJECT=$5
 	TUMOR_INDIVIDUAL=$6
-		NORMAL_SUBJECT_ID=$(echo ${TUMOR_INDIVIDUAL}_N)
 	TUMOR_SM_TAG=$7
-	REF_GENOME=$8
-	BAIT_BED=$9
-	SUBMIT_STAMP=${10}
-
-# GRAB NORMAL SM TAG, PROJECT FROM QC REPORT
-
-	PROJECT_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="PROJECT") print i}}' ${QC_REPORT})
-
-	SUBJECT_ID_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Subject_ID") print i}}' ${QC_REPORT})
-
-	SM_TAG_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="SM_TAG") print i}}' ${QC_REPORT})
-
-		NORMAL_SM_TAG=$(awk \
-			-v PROJECT_COLUMN_POSITION="$PROJECT_COLUMN_POSITION" \
-			-v SUBJECT_ID_COLUMN_POSITION="$SUBJECT_ID_COLUMN_POSITION" \
-			-v SM_TAG_COLUMN_POSITION="$SM_TAG_COLUMN_POSITION" \
-			'BEGIN {FS=",";OFS="\t"} \
-			$SUBJECT_ID_COLUMN_POSITION=="'${NORMAL_SUBJECT_ID}'" \
-			{print $SM_TAG_COLUMN_POSITION}' \
-		${QC_REPORT} \
-			| sort \
-			| uniq)
-
-		NORMAL_PROJECT=$(awk \
-			-v PROJECT_COLUMN_POSITION="$PROJECT_COLUMN_POSITION" \
-			-v SUBJECT_ID_COLUMN_POSITION="$SUBJECT_ID_COLUMN_POSITION" \
-			-v SM_TAG_COLUMN_POSITION="$SM_TAG_COLUMN_POSITION" \
-			'BEGIN {FS=",";OFS="\t"} \
-			$SUBJECT_ID_COLUMN_POSITION=="'${NORMAL_SUBJECT_ID}'" \
-			{print $PROJECT_COLUMN_POSITION}' \
-		${QC_REPORT} \
-			| sort \
-			| uniq)
+	NORMAL_SM_TAG=$8
+	REF_GENOME=$9
+	BAIT_BED=${10}
+	SUBMIT_STAMP=${11}
 
 ## MERGE MUTECT2 STATS FILES TO BE USED IN FILTERING LATER
 
@@ -81,7 +51,7 @@ START_CAT_MUTECT2=$(date '+%s') # capture time process starts for wall clock tra
 
 		# loop through natural sorted chromosome list to concatentate gvcf files.
 
-		for CHROMOSOME in $(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}.bed \
+		for CHROMOSOME in $(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${BAIT_BED}.bed \
 				| sed -r 's/[[:space:]]+/\t/g' \
 				| sed 's/chr//g' \
 				| egrep "^[0-9]|^X|^Y" \

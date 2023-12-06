@@ -31,10 +31,11 @@
 	TUMOR_PROJECT=$3
 	TUMOR_INDIVIDUAL=$4
 	TUMOR_SM_TAG=$5
-	REF_DICT=$6
-	BAIT_BED=$7
+	NORMAL_SM_TAG=$6
+	REF_DICT=$7
+	BAIT_BED=$8
 		# BAIT_BED_NAME=$(basename ${BAIT_BED} .bed)
-	TARGET_BED=$8
+	TARGET_BED=$9
 		# TARGET_BED_NAME=$(basename ${TARGET_BED} .bed)
 	# REF_DICT=$8
 	# HG38_TO_HG19_CHAIN=$9
@@ -52,7 +53,7 @@
 				| sed -r 's/\r//g ; s/[[:space:]]+/\t/g' \
 				| sort -V -k 1,1 -k 2,2n -k 3,3n \
 				| egrep "^chr[0-9]|^chrX|^chrY" \
-			>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}.bed
+			>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${BAIT_BED}.bed
 
 	# FIX THE TARGET BED FILE
 
@@ -64,7 +65,7 @@
 				| sed -r 's/\r//g ; s/[[:space:]]+/\t/g' \
 				| sort -V -k 1,1 -k 2,2n -k 3,3n \
 				| egrep "^chr[0-9]|^chrX|^chrY" \
-			>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${TARGET_BED}.bed
+			>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TARGET_BED}.bed
 
 # # MAKE PICARD INTERVAL FILES (1-based start) for bed files in the sample sheet
 # 	# GRAB THE SEQUENCING DICTIONARY FORM THE ".dict" file in the directory where the reference genome is located
@@ -79,16 +80,16 @@
 		(grep "^@SQ" ${REF_DICT} \
 			; awk 'BEGIN {OFS="\t"} \
 				{print $1,($2+1),$3,"+",$1"_"($2+1)"_"$3}' \
-			${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}.bed) \
-		>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${BAIT_BED}-picard.bed
+			${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${BAIT_BED}.bed) \
+		>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${BAIT_BED}-picard.bed
 
 	# target bed
 
 		(grep "^@SQ" ${REF_DICT} \
 			; awk 'BEGIN {OFS="\t"} \
 				{print $1,($2+1),$3,"+",$1"_"($2+1)"_"$3}' \
-			${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${TARGET_BED}.bed) \
-		>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}-${TUMOR_SM_TAG}-${TARGET_BED}-picard.bed
+			${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TARGET_BED}.bed) \
+		>| ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TARGET_BED}-picard.bed
 
 # 	# titv bed
 

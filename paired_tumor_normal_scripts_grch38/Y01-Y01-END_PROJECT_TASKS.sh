@@ -357,6 +357,28 @@
 ##### MAKE A QC REPORT FOR JUST THE SAMPLES IN THE BATCH PER PROJECT  #####
 ###########################################################################
 
+	##########################################################
+	##### GRAB COLUMN POSITIONS FOR HEADERS IN QC REPORT #####
+	##########################################################
+
+		INDIVIDUAL_ID_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Individual_ID") print i}}' ${QC_REPORT})
+
+		NORMAL_SM_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Normal_SM") print i}}' ${QC_REPORT})
+
+		TUMOR_SM_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Tumor_SM") print i}}' ${QC_REPORT})
+
+		NORMAL_PROJECT_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Normal_Project") print i}}' ${QC_REPORT})
+
+		TUMOR_PROJECT_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Tumor_Project") print i}}' ${QC_REPORT})
+
+		BAIT_BED_FILE_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="BAIT_BED_FILE") print i}}' ${QC_REPORT})
+
+		TARGET_BED_FILE_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="TARGET_BED_FILE") print i}}' ${QC_REPORT})
+
+		NORMAL_DNA_SOURCE_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Normal_DNA_source") print i}}' ${QC_REPORT})
+
+		TUMOR_DNA_SOURCE_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="Tumor_DNA_source") print i}}' ${QC_REPORT})
+
 	###############################################################################
 	### CONCATENATE INDIVIDUAL QC REPORTS FOR JUST THE SAMPLES IN THE QC REPORT ###
 	###############################################################################
@@ -366,21 +388,37 @@
 			head -n 1 ${CORE_PATH}/${SEQ_PROJECT}/REPORTS/QC_REPORTS/${SEQ_PROJECT}.PAIRED_QC_REPORT.${TIMESTAMP}.csv \
 			>| ${CORE_PATH}/${SEQ_PROJECT}/TEMP/${QC_REPORT_NAME}/${QC_REPORT_NAME}.QC_REPORT.csv
 			
-		# for all samples in the sample sheet extract those samples from the all project samples QC report
+		# for all tumor samples in the sample sheet extract those samples from the all project samples QC report
 
-			SM_TAG_COLUMN_POSITION=$(awk 'BEGIN {FS=","} NR==1 {for (i=1; i<=NF; ++i) {if ($i=="SM_TAG") print i}}' ${QC_REPORT})
-
-			for SM_TAG in $(awk 1 ${QC_REPORT} \
+			for TUMOR_SM_TAG in $(awk 1 ${QC_REPORT} \
 				| awk \
-					-v SM_TAG_COLUMN_POSITION="$SM_TAG_COLUMN_POSITION" \
+					-v TUMOR_SM_COLUMN_POSITION="$TUMOR_SM_COLUMN_POSITION" \
 					'BEGIN {FS=","} \
 					NR>1 \
-					{print $SM_TAG_COLUMN_POSITION}' \
+					{print $TUMOR_SM_COLUMN_POSITION}' \
 				| sort \
 				| uniq);
 			do
 				awk 'BEGIN {FS=",";OFS=","} \
-					$3=="'${SM_TAG}'" \
+					$3=="'${TUMOR_SM_TAG}'" \
+					{print $0}' \
+				${CORE_PATH}/${SEQ_PROJECT}/REPORTS/QC_REPORTS/${SEQ_PROJECT}.PAIRED_QC_REPORT.${TIMESTAMP}.csv \
+				>> ${CORE_PATH}/${SEQ_PROJECT}/TEMP/${QC_REPORT_NAME}/${QC_REPORT_NAME}.QC_REPORT.csv
+			done
+
+		# for all tumor samples in the sample sheet extract those samples from the all project samples QC report
+
+			for NORMAL_SM_TAG in $(awk 1 ${QC_REPORT} \
+				| awk \
+					-v NORMAL_SM_COLUMN_POSITION="$NORMAL_SM_COLUMN_POSITION" \
+					'BEGIN {FS=","} \
+					NR>1 \
+					{print $NORMAL_SM_COLUMN_POSITION}' \
+				| sort \
+				| uniq);
+			do
+				awk 'BEGIN {FS=",";OFS=","} \
+					$3=="'${NORMAL_SM_TAG}'" \
 					{print $0}' \
 				${CORE_PATH}/${SEQ_PROJECT}/REPORTS/QC_REPORTS/${SEQ_PROJECT}.PAIRED_QC_REPORT.${TIMESTAMP}.csv \
 				>> ${CORE_PATH}/${SEQ_PROJECT}/TEMP/${QC_REPORT_NAME}/${QC_REPORT_NAME}.QC_REPORT.csv
