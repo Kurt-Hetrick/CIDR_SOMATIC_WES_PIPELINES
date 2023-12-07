@@ -779,6 +779,7 @@ ${SUBMIT_STAMP}
 			${QC_REPORT} \
 			${CORE_PATH} \
 			${PROJECT} \
+			${ALLELE_FRACTION_CUTOFF} \
 			${SUBMITTER_SCRIPT_PATH} \
 			${SUBMITTER_ID} \
 			${SUBMIT_STAMP} \
@@ -803,6 +804,6 @@ ${SUBMIT_STAMP}
 
 # EMAIL WHEN DONE SUBMITTING
 
-	printf "${QC_REPORT}\nhas finished submitting at\n`date`\nby `whoami`" \
+	printf "${QC_REPORT}\nhas finished submitting at\n`date`\nby `whoami`\nALLELE FRACTION CUTOFF IS: ${ALLELE_FRACTION_CUTOFF}" \
 		| mail -s "${PERSON_NAME} has submitted CIDR_NGS_CAPTURE_PAIRED_TUMOR_NORMAL_SUBMITTER_GRCH38.sh" \
 			${SEND_TO}
