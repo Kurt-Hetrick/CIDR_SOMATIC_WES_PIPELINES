@@ -6,12 +6,19 @@
 
 	SAMPLE_SHEET=$1
 		SAMPLE_SHEET_NAME=$(basename ${SAMPLE_SHEET} .csv)
-	PRIORITY=$2 # optional. if no 2nd argument present then the default is -15
+	ARRAY_REF=$2
+		# if there is no 2nd argument present the array reference genome is grch37
+
+			if [[ ! ${ARRAY_REF} ]]
+				then
+				ARRAY_REF="grch37"
+			fi
+
+	PRIORITY=$3 # optional. if no 2nd argument present then the default is -15
 
 		# if there is no 2nd argument present then use the number for priority
-			if
-				[[ ! ${PRIORITY} ]]
-			then
+			if [[ ! ${PRIORITY} ]]
+				then
 				PRIORITY="-15"
 			fi
 
@@ -26,6 +33,8 @@
 	GRCH38_SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/grch38_scripts"
 
 	HG19_SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/hg19_scripts"
+
+	GRCH37_SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/grch37_scripts"
 
 ##################
 # CORE VARIABLES #
@@ -1521,54 +1530,6 @@
 				${SUBMIT_STAMP}
 		}
 
-	############################################################
-	# LIFTOVER ON TARGET PASS SNV VCF FILE FROM GRCh38 to hg19 #
-	############################################################
-
-		LIFTOVER_TARGET_PASS_SNV ()
-		{
-			echo \
-			qsub \
-				${STD_QUEUE_QSUB_ARGS} \
-			-N J01-A04-A01-SNV_TARGET_LIFTOVER_HG19_${SGE_SM_TAG}_${PROJECT} \
-				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-TARGET_SNV_TARGET_LIFTOVER.log \
-			-hold_jid J01-A04-EXTRACT_SNV_TARGET_PASS_${SGE_SM_TAG}_${PROJECT} \
-			${GRCH38_SCRIPT_DIR}/J01-A04-A01-SNV_TARGET_LIFTOVER_HG19.sh \
-				${PICARD_LIFTOVER_CONTAINER} \
-				${CORE_PATH} \
-				${PROJECT} \
-				${SM_TAG} \
-				${HG19_REF} \
-				${HG38_TO_HG19_CHAIN} \
-				${SAMPLE_SHEET} \
-				${SUBMIT_STAMP}
-		}
-
-	############################################################################################
-	# GENERATE CONCORDANCE USING GT ARRAY FINAL REPORT AS THE TRUTH SET ON THE TARGET BED FILE #
-	# USING LIFTED OVER SEQUENCING VCF FILE ####################################################
-	############################################################################################
-
-		TARGET_PASS_SNV_CONCORDANCE ()
-		{
-			echo \
-			qsub \
-				${STD_QUEUE_QSUB_ARGS} \
-			-N J01-A04-A01-A01-SNV_TARGET_PASS_CONCORDANCE_${SGE_SM_TAG}_${PROJECT} \
-				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-TARGET_PASS_SNV_QC_CONCORDANCE.log \
-			-hold_jid J01-A04-A01-SNV_TARGET_LIFTOVER_HG19_${SGE_SM_TAG}_${PROJECT} \
-			${GRCH38_SCRIPT_DIR}/J01-A04-A01-A01-SNV_TARGET_PASS_CONCORDANCE.sh \
-				${JAVA_1_8} \
-				${CIDRSEQSUITE_7_5_0_DIR} \
-				${VERACODE_CSV} \
-				${CORE_PATH} \
-				${PROJECT} \
-				${SM_TAG} \
-				${TARGET_BED} \
-				${SAMPLE_SHEET} \
-				${SUBMIT_STAMP}
-		}
-
 	#############################################
 	# GENERATE VCF METRICS FOR ON BAIT BED FILE #
 	#############################################
@@ -1641,42 +1602,9 @@
 				${SUBMIT_STAMP}
 		}
 
-######################################
-# GENERATE QC REPORT STUB FOR SAMPLE #
-######################################
-
-QC_REPORT_PREP ()
-{
-echo \
-qsub \
-${STD_QUEUE_QSUB_ARGS} \
--N X1_${SGE_SM_TAG} \
--hold_jid \
-E01-RUN_VERIFYBAMID_${SGE_SM_TAG}_${PROJECT},\
-E03-DOC_CODING_${SGE_SM_TAG}_${PROJECT},\
-E04-DOC_BAIT_${SGE_SM_TAG}_${PROJECT},\
-E05-A01-CHROM_DEPTH_${SGE_SM_TAG}_${PROJECT},\
-F02-COLLECT_MULTIPLE_METRICS_${SGE_SM_TAG}_${PROJECT},\
-F03-COLLECT_HS_METRICS_${SGE_SM_TAG}_${PROJECT},\
-F04-A01-GATK_CALC_TUMOR_CONTAM_${SGE_SM_TAG}_${PROJECT},\
-E06-A01-CAT_VERIFYBAMID_AUTO_${SGE_SM_TAG}_${PROJECT},\
-J01-A04-A01-A01-SNV_TARGET_PASS_CONCORDANCE_${SGE_SM_TAG}_${PROJECT},\
-J01-A01-VCF_METRICS_BAIT_QC_${SGE_SM_TAG}_${PROJECT},\
-J01-A02-VCF_METRICS_TARGET_QC_${SGE_SM_TAG}_${PROJECT},\
-J01-A03-VCF_METRICS_TITV_QC_${SGE_SM_TAG}_${PROJECT} \
--o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-QC_REPORT_PREP_QC.log \
-${COMMON_SCRIPT_DIR}/X01-QC_REPORT_PREP.sh \
-${ALIGNMENT_CONTAINER} \
-${CORE_PATH} \
-${PROJECT} \
-${SM_TAG} \
-${SAMPLE_SHEET} \
-${SUBMIT_STAMP}
-}
-
-##########################################################
-# RUN STEPS TO DO VCF RELATED METRICS AND QC REPORT PREP #
-##########################################################
+#######################################
+# RUN STEPS TO DO VCF RELATED METRICS #
+#######################################
 
 	for SM_TAG in $(awk 1 ${SAMPLE_SHEET} \
 		| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
@@ -1699,18 +1627,184 @@ ${SUBMIT_STAMP}
 		echo sleep 0.1s
 		EXTRACT_ON_TARGET_PASS_SNV
 		echo sleep 0.1s
-		LIFTOVER_TARGET_PASS_SNV
-		echo sleep 0.1s
-		TARGET_PASS_SNV_CONCORDANCE
-		echo sleep 0.1s
 		VCF_METRICS_BAIT
 		echo sleep 0.1s
 		VCF_METRICS_TARGET
 		echo sleep 0.1s
 		VCF_METRICS_TITV
 		echo sleep 0.1s
+	done
+
+#############################################################################################
+# GENERATE CONCORDANCE USING GT ARRAY FINAL REPORT AS THE TRUTH SET ON THE TARGET BED FILE ##
+# THERE ARE TWO DIFFERENT PATHWAYS DEPENDING ON WHAT THE REF GENOME THAT THE GT ARRAY IS ON #
+#############################################################################################
+
+	####################################################
+	# STEPS FOR WHEN THE GT ARRAY REF GENOME IS GRCH37 #
+	####################################################
+
+		############################################################
+		# LIFTOVER ON TARGET PASS SNV VCF FILE FROM GRCh38 to hg19 #
+		############################################################
+
+			LIFTOVER_TARGET_PASS_SNV_TO_HG19 ()
+			{
+				echo \
+				qsub \
+					${STD_QUEUE_QSUB_ARGS} \
+				-N J01-A04-A01-SNV_TARGET_LIFTOVER_HG19_${SGE_SM_TAG}_${PROJECT} \
+					-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-TARGET_SNV_TARGET_LIFTOVER.log \
+				-hold_jid J01-A04-EXTRACT_SNV_TARGET_PASS_${SGE_SM_TAG}_${PROJECT} \
+				${GRCH38_SCRIPT_DIR}/J01-A04-A01-SNV_TARGET_LIFTOVER_HG19.sh \
+					${PICARD_LIFTOVER_CONTAINER} \
+					${CORE_PATH} \
+					${PROJECT} \
+					${SM_TAG} \
+					${HG19_REF} \
+					${HG38_TO_HG19_CHAIN} \
+					${SAMPLE_SHEET} \
+					${SUBMIT_STAMP}
+			}
+
+		############################################################################################
+		# GENERATE CONCORDANCE USING GT ARRAY FINAL REPORT AS THE TRUTH SET ON THE TARGET BED FILE #
+		# USING LIFTED OVER SEQUENCING VCF FILE ####################################################
+		############################################################################################
+
+			TARGET_PASS_SNV_CONCORDANCE_GRCH37 ()
+			{
+				echo \
+				qsub \
+					${STD_QUEUE_QSUB_ARGS} \
+				-N J01-A04-A01-A01-SNV_TARGET_PASS_CONCORDANCE_${SGE_SM_TAG}_${PROJECT} \
+					-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-TARGET_PASS_SNV_QC_CONCORDANCE.log \
+				-hold_jid J01-A04-A01-SNV_TARGET_LIFTOVER_HG19_${SGE_SM_TAG}_${PROJECT} \
+				${GRCH38_SCRIPT_DIR}/J01-A04-A01-A01-SNV_TARGET_PASS_CONCORDANCE.sh \
+					${JAVA_1_8} \
+					${CIDRSEQSUITE_7_5_0_DIR} \
+					${VERACODE_CSV} \
+					${CORE_PATH} \
+					${PROJECT} \
+					${SM_TAG} \
+					${TARGET_BED} \
+					${SAMPLE_SHEET} \
+					${SUBMIT_STAMP}
+			}
+
+	####################################################
+	# STEPS FOR WHEN THE GT ARRAY REF GENOME IS GRCH38 #
+	####################################################
+
+		TARGET_PASS_SNV_CONCORDANCE_GRCH38 ()
+		{
+			echo \
+			qsub \
+				${QSUB_ARGS} \
+			-N J01-A04-A01-SNV_TARGET_PASS_CONCORDANCE_${SGE_SM_TAG}_${PROJECT} \
+				-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-TARGET_PASS_SNV_QC_CONCORDANCE.log \
+			-hold_jid J01-A04-EXTRACT_SNV_TARGET_PASS_${SGE_SM_TAG}_${PROJECT} \
+			${GRCH37_SCRIPT_DIR}/J01-A04-A01-SNV_TARGET_PASS_CONCORDANCE.sh \
+				${JAVA_1_8} \
+				${CIDRSEQSUITE_7_5_0_DIR} \
+				${VERACODE_CSV} \
+				${CORE_PATH} \
+				${PROJECT} \
+				${SM_TAG} \
+				${TARGET_BED} \
+				${SAMPLE_SHEET} \
+				${SUBMIT_STAMP}
+		}
+
+############################################################################################
+# RUN CONCORDANCE SCRIPTS BASED ON WHAT THE REFERENCE GENOME BUILD IS. DEFAULT OR NOT ######
+############################################################################################
+
+	if
+		[[ ${ARRAY_REF} == "grch37" ]]
+	then
+		for SM_TAG in $(awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} \
+				NR>1 \
+				{print $8}' \
+			| sort \
+			| uniq);
+		do
+			CREATE_SAMPLE_ARRAY
+			LIFTOVER_TARGET_PASS_SNV_TO_HG19
+			echo sleep 0.1s
+			TARGET_PASS_SNV_CONCORDANCE_GRCH37
+			echo sleep 0.1s
+		done
+	else
+		for SM_TAG in $(awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} \
+				NR>1 \
+				{print $8}' \
+			| sort \
+			| uniq);
+		do
+			CREATE_SAMPLE_ARRAY
+			TARGET_PASS_SNV_CONCORDANCE_GRCH38
+			echo sleep 0.1s
+		done
+	fi
+
+
+######################################
+# GENERATE QC REPORT STUB FOR SAMPLE #
+######################################
+
+# NOTE: THERE ARE TWO CONCORDANCE LISTED IN THE HOLD ID DEPENDING ON WHAT THE GT ARRAY BUILD IS ON
+# IF THE OTHER ONE DOES NOT EXIST IT DOES NOT MATTER
+
+QC_REPORT_PREP ()
+{
+echo \
+qsub \
+${STD_QUEUE_QSUB_ARGS} \
+-N X1_${SGE_SM_TAG} \
+-hold_jid \
+E01-RUN_VERIFYBAMID_${SGE_SM_TAG}_${PROJECT},\
+E03-DOC_CODING_${SGE_SM_TAG}_${PROJECT},\
+E04-DOC_BAIT_${SGE_SM_TAG}_${PROJECT},\
+E05-A01-CHROM_DEPTH_${SGE_SM_TAG}_${PROJECT},\
+F02-COLLECT_MULTIPLE_METRICS_${SGE_SM_TAG}_${PROJECT},\
+F03-COLLECT_HS_METRICS_${SGE_SM_TAG}_${PROJECT},\
+F04-A01-GATK_CALC_TUMOR_CONTAM_${SGE_SM_TAG}_${PROJECT},\
+E06-A01-CAT_VERIFYBAMID_AUTO_${SGE_SM_TAG}_${PROJECT},\
+J01-A04-A01-SNV_TARGET_PASS_CONCORDANCE_${SGE_SM_TAG}_${PROJECT},\
+J01-A04-A01-A01-SNV_TARGET_PASS_CONCORDANCE_${SGE_SM_TAG}_${PROJECT},\
+J01-A01-VCF_METRICS_BAIT_QC_${SGE_SM_TAG}_${PROJECT},\
+J01-A02-VCF_METRICS_TARGET_QC_${SGE_SM_TAG}_${PROJECT},\
+J01-A03-VCF_METRICS_TITV_QC_${SGE_SM_TAG}_${PROJECT} \
+-o ${CORE_PATH}/${PROJECT}/LOGS/${SM_TAG}/${SM_TAG}-QC_REPORT_PREP_QC.log \
+${COMMON_SCRIPT_DIR}/X01-QC_REPORT_PREP.sh \
+${ALIGNMENT_CONTAINER} \
+${CORE_PATH} \
+${PROJECT} \
+${SM_TAG} \
+${SAMPLE_SHEET} \
+${SUBMIT_STAMP}
+}
+
+#####################
+# DO QC REPORT PREP #
+#####################
+
+	for SM_TAG in $(awk 1 ${SAMPLE_SHEET} \
+		| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+		| awk 'BEGIN {FS=","} \
+			NR>1 \
+			{print $8}' \
+		| sort \
+		| uniq);
+	do
+		CREATE_SAMPLE_ARRAY
 		QC_REPORT_PREP
-		echo sleep 0.1
+		echo sleep 0.1s
 	done
 
 #############################
