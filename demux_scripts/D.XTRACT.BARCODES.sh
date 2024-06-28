@@ -65,8 +65,8 @@ START_EXTRACT_BARCODES=$(date '+%s') # capture time process starts for wall cloc
 
 # write command line to file and execute the command line
 
-	echo ${CMD} >> ${CORE_PATH}/${PROJECT}/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
-	echo >> ${CORE_PATH}/${PROJECT}/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
 	echo ${CMD} | bash
 
 # check the exit signal at this point.
@@ -80,7 +80,7 @@ START_EXTRACT_BARCODES=$(date '+%s') # capture time process starts for wall cloc
 		[ "${SCRIPT_STATUS}" -ne 0 ]
 	then
 		echo ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-		>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
+		>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
 		exit ${SCRIPT_STATUS}
 	fi
 

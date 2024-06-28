@@ -70,8 +70,8 @@ START_BCL2SAM=$(date '+%s')
 
 # write command line to file and execute the command line
 
-	echo ${CMD} >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${LANE}.COMMAND.LINES.txt
-	echo >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${LANE}.COMMAND.LINES.txt
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
 	echo ${CMD} | bash
 
 	# check the exit signal at this point.

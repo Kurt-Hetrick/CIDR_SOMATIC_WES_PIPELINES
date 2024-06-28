@@ -6,9 +6,9 @@
 
 	SAMPLE_SHEET=$1
 		SAMPLE_SHEET_NAME=$(basename ${SAMPLE_SHEET} .csv)
-	IEM_SAMPLE_SHEET=$2
-	READ_STRUCTURE=$3
-	PRIORITY=$4 # optional. if no 4th argument present then the default is -15
+	# IEM_SAMPLE_SHEET=$2
+	READ_STRUCTURE=$2
+	PRIORITY=$3 # optional. if no 4th argument present then the default is -15
 
 		# if there is no 2nd argument present then use the number for priority
 			if [[ ! ${PRIORITY} ]]
@@ -217,29 +217,65 @@
 # These are based on the sample sheet format output by Illumina Experiment Manager ###########
 ##############################################################################################
 
-# Function to create QSUB command that will run wrapper for FGBIO: ExtractBasecallingParamsForPicard
+# # Function to create QSUB command that will run wrapper for FGBIO: ExtractBasecallingParamsForPicard
 
-	EXTRACT_PARAMS_4_PICARD ()
+# 	EXTRACT_PARAMS_4_PICARD ()
+# 	{
+# 		echo \
+# 		qsub \
+# 			${STANDARD_QSUB_ARGS} \
+# 		-N EXTRACT_PARAMS_4_PICARD_${SEQ_PROJECT}_${FCID}_${LANE} \
+# 			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-EXTRACT_PARAMS_4_PICARD.log \
+# 		${SCRIPT_DIR}/EXTRACT_PARAMS_4_PICARD.sh \
+# 			${UMI_CONTAINER} \
+# 			${CORE_PATH} \
+# 			${SEQ_PROJECT} \
+# 			${LANE} \
+# 			${SAMPLE_SHEET} \
+# 			${SUBMIT_STAMP} \
+# 			${READ_STRUCTURE} \
+# 			${FCID} \
+# 			${IEM_SAMPLE_SHEET}
+# 	}
+
+# Function to create library_params.${LANE}.txt and barcode_params.${LANE}.txt
+
+	CREATE_PARAMS ()
 	{
-		echo \
-		qsub \
-			${STANDARD_QSUB_ARGS} \
-		-N EXTRACT_PARAMS_4_PICARD_${SEQ_PROJECT}_${FCID}_${LANE} \
-			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-EXTRACT_PARAMS_4_PICARD.log \
-		${SCRIPT_DIR}/EXTRACT_PARAMS_4_PICARD.sh \
-			${UMI_CONTAINER} \
-			${CORE_PATH} \
-			${SEQ_PROJECT} \
-			${LANE} \
+
+		# CREATE barcode_params.${LANE}.txt
+
+			awk -F "," 'BEGIN {print "barcode_sequence_1","barcode_sequence_2","barcode_name","library_name"} \
+				$3=="'${LANE}'" \
+				{split($4,BARCODE,"-"); \
+				print BARCODE[1],BARCODE[2],BARCODE[1]BARCODE[2],$2"_"$3"_"$4}' \
 			${SAMPLE_SHEET} \
-			${SUBMIT_STAMP} \
-			${READ_STRUCTURE} \
-			${FCID} \
-			${IEM_SAMPLE_SHEET}
+				| sed 's/ /\t/g' \
+			>| ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID}/barcode_params.${LANE}.txt
+
+		# CREATE library_params.${LANE}.txt
+
+			awk -F "," 'BEGIN {print "BARCODE_1","BARCODE_2","OUTPUT","SAMPLE_ALIAS","LIBRARY_NAME"} \
+				$3=="'${LANE}'" \
+				{split($4,BARCODE,"-"); \
+				print BARCODE[1] , BARCODE[2] , \
+				"'${CORE_PATH}'" "/" $1 "/DEMUX_UMAP/BARCODES/" $2 "/RG_UMAP_BAMS/" \
+					$2 "_" "'${LANE}'" "_" $4 "." BARCODE[1]BARCODE[2] "." "'${LANE}'" ".bam" , \
+				$2 "_" "'${LANE}'" "_" $4 , \
+				$2 "_" "'${LANE}'" "_" $4} \
+				END {print "N","N", \
+				"'${CORE_PATH}'" "/" $1 "/DEMUX_UMAP/BARCODES/" $2 "/RG_UMAP_BAMS/unmatched."'${LANE}'".bam", \
+				"unmatched","unmatched"}' \
+			${SAMPLE_SHEET} \
+				| sed 's/ /\t/g' \
+			>| ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID}/library_params.${LANE}.txt
+
 	}
 
 # Function to create QSUB commands to run Picard's ExtractIlluminaBarcodes
 # The end result will be unmapped BAM files containing the UMI sequence and quality scores in the RX/UX tags respectively.
+
+		# -hold_jid EXTRACT_PARAMS_4_PICARD_${SEQ_PROJECT}_${FCID}_${LANE} \
 
 	DEMUX_BARCODES ()
 	{
@@ -250,7 +286,6 @@
 			-R y \
 		-N D.XTRACT.BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
 			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-D.XTRACT.BARCODES.log \
-		-hold_jid EXTRACT_PARAMS_4_PICARD_${SEQ_PROJECT}_${FCID}_${LANE} \
 		${SCRIPT_DIR}/D.XTRACT.BARCODES.sh \
 			${UMI_CONTAINER} \
 			${CORE_PATH} \
@@ -298,7 +333,8 @@
 		echo Project started at $(date) \
 		>> ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/REPORTS/DEMUX_${LANE}_START_END_TIMESTAMP.txt
 		CREATE_FLOWCELL_ARRAY
-		EXTRACT_PARAMS_4_PICARD
+		# EXTRACT_PARAMS_4_PICARD
+		CREATE_PARAMS
 		DEMUX_BARCODES
 		DEMUX_BCL2SAM
 		echo \
@@ -322,12 +358,13 @@
 #Another email will be sent at the completion of each lane of the demux job.
 #Maybe TODO write a function to monitor and send an email when all lanes have completed.
 
+		# Illumina Sample Sheet: ${IEM_SAMPLE_SHEET}\n \
+
 	printf "${SUBMITTER_SCRIPT_PATH}/PICARD_DEMUX_SUBMITTER.sh\n \
 		has finished submitting at\n \
 		$(date)\n \
 		by $(whoami)\n \
 		CIDR Sample Sheet: ${SAMPLE_SHEET}\n \
-		Illumina Sample Sheet: ${IEM_SAMPLE_SHEET}\n \
 		READ_STRUCTURE: ${READ_STRUCTURE}\n \
 		Pipeline Version: ${PIPELINE_VERSION}" \
 	| mail -s "${PERSON_NAME} has submitted PICARD_DEMUX_SUBMITTER.sh" \
