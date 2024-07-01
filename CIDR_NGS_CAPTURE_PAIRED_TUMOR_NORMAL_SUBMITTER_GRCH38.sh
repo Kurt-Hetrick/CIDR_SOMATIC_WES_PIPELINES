@@ -12,7 +12,7 @@
 			if
 				[[ ! ${ALLELE_FRACTION_CUTOFF} ]]
 			then
-				ALLELE_FRACTION_CUTOFF="0.10"
+				ALLELE_FRACTION_CUTOFF="0.05"
 			fi
 
 	PRIORITY=$3 # optional. if no 2nd argument present then the default is -15
