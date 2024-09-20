@@ -35,39 +35,52 @@
 	SAMPLE_SHEET=$6
 		SAMPLE_SHEET_NAME=$(basename ${SAMPLE_SHEET} .csv)
 	SUBMIT_STAMP=$7
-	READ_STRUCTURE=$8 # 146T8B9M8B146T
-	FCID=$9
-
-		# Try limiting JVM to FreeMem -50g to avoid pegging the host
-		FREE_MEMG=$(awk '/MemAvailable/ { printf "%.0f", ($2/1024/1024)-50}' /proc/meminfo)
+	FCID=$8
+	MISMATCH=$9
+	NO_CALL=${10}
 
 START_EXTRACT_BARCODES=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
-	echo Project started at $(date) \
-	>> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/DEMUX_${LANE}_START_END_TIMESTAMP.txt
+	# if any part of pipe fails set exit to non-zero
+
+		set -o pipefail
 
 # FIRST Extract barcodes
 #https://software.broadinstitute.org/gatk/documentation/tooldocs/4.0.5.2/picard_illumina_ExtractIlluminaBarcodes.php
 #num_processors can be tuned to the runtime environment by exposing to command line args if needed.
 
-	CMD="singularity exec ${UMI_CONTAINER} java -jar"
-		CMD=${CMD}" -Xmx${FREE_MEMG}g"
-		CMD=${CMD}" /picard/picard.jar"
-	CMD=${CMD}" ExtractIlluminaBarcodes"
-		CMD=${CMD}" BASECALLS_DIR=${RUN_FOLDER}/Data/Intensities/BaseCalls"
-		CMD=${CMD}" BARCODE_FILE=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID}/barcode_params.${LANE}.txt"
-		CMD=${CMD}" READ_STRUCTURE=${READ_STRUCTURE}"
-		CMD=${CMD}" LANE=${LANE}"
-		# CMD=${CMD}" NUM_PROCESSORS= -15"
-		CMD=${CMD}" NUM_PROCESSORS=70"
-	CMD=${CMD}" METRICS_FILE=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/DEMUX/${FCID}/lane_${LANE}_barcode_metrics.txt"
-	CMD=${CMD}" OUTPUT_DIR=${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/BARCODES/"
+	sort -k 1,1 ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/BARCODES/s_${LANE}_????_barcode.txt \
+		| singularity exec ${UMI_CONTAINER} datamash \
+			-g 1 \
+			count 1 \
+		| sort -k 2,2nr \
+		| awk 'BEGIN {OFS="\t"} {print substr($1,1,8),substr($1,9,8),$2}' \
+		| awk '{print "'${FCID}'","'${LANE}'",$0,"'${MISMATCH}'","'${NO_CALL}'"}' \
+		| awk 'BEGIN {print "FLOWCELL","LANE","INDEX1","INDEX2","COUNT","MISMATCHES_ALLOWED","NOCALLS_ALLOWED"} \
+			$5>=1000 \
+			{print $0}' \
+		| sed 's/ /\t/g' \
+	>| ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/BARCODE_SUMMARY/${FCID}_${LANE}_barcodes_found_summary.txt \
+		&& \
+	rm -rvf ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/BARCODES/s_${LANE}_????_barcode.txt
+
+	# sort -k 1,1 ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/BARCODES/s_${LANE}_????_barcode.txt \
+	# 	| singularity exec ${UMI_CONTAINER} datamash \
+	# 		-g 1 \
+	# 		count 1 \
+	# 	| sort -k 2,2nr \
+	# 	| awk 'BEGIN {OFS="\t"} {print substr($1,1,8),substr($1,9,8),$2}' \
+	# 	| awk '{print "'${FCID}'","'${LANE}'",$0,"'${MISMATCH}'","'${NO_CALL}'"}' \
+	# 	| sed 's/ /\t/g' \
+	# 	| awk 'BEGIN {print "FLOWCELL","LANE","INDEX1","INDEX2","COUNT","MISMATCHES_ALLOWED","NOCALLS_ALLOWED"} \
+	# 		{print $0}' \
+	# >| ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/REPORTS/BARCODE_SUMMARY/${FCID}_${LANE}_barcodes_found_summary.txt
 
 # write command line to file and execute the command line
 
-	echo ${CMD} >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
-	echo >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
-	echo ${CMD} | bash
+	# echo ${CMD} >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
+	# echo >> ${CORE_PATH}/${PROJECT}/DEMUX_UMAP/COMMAND_LINES/${PROJECT}_DEMUX_command_lines.txt
+	# echo ${CMD} | bash
 
 # check the exit signal at this point.
 

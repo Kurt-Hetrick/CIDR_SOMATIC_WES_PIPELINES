@@ -6,13 +6,31 @@
 
 	SAMPLE_SHEET=$1
 		SAMPLE_SHEET_NAME=$(basename ${SAMPLE_SHEET} .csv)
-	# IEM_SAMPLE_SHEET=$2
 	READ_STRUCTURE=$2
-	PRIORITY=$3 # optional. if no 4th argument present then the default is -15
+	MISMATCHES_ALLOWED=$3 # number of mismatches allowed when assigning barcodes to sample
+
+		# if there is no 3rd argument present then use the number for mismatches allowed
+			if
+				[[ ! ${MISMATCHES_ALLOWED} ]]
+			then
+				MISMATCHES_ALLOWED="1"
+			fi
+
+	NO_CALLS_ALLOWED=$4 # number of no calls allowed when assigned barcodes to sample
+
+		# if there is no 4th argument present then use the number for no calls allowed
+			if
+				[[ ! ${NO_CALLS_ALLOWED} ]]
+			then
+				NO_CALLS_ALLOWED="2"
+			fi
+
+	PRIORITY=$5 # optional. if no 4th argument present then the default is -15
 
 		# if there is no 2nd argument present then use the number for priority
-			if [[ ! ${PRIORITY} ]]
-				then
+			if
+				[[ ! ${PRIORITY} ]]
+			then
 				PRIORITY="-15"
 			fi
 
@@ -200,10 +218,11 @@
 		
 		SEQ_CENTER=${FCID_ARRAY[1]}
 
-		RUN_FOLDER=$(ls -d ${NOVASEQ_REPO}/* ${NOVASEQX_REPO}/* \
+		RUN_FOLDER=$(ls -d ${NOVASEQ_REPO}/* ${NOVASEQX_REPO}/* ${NOVASEQX_REPO}/00_DO_NOT_ARCHIVE/* \
 			| grep ${FCID})
 
 		mkdir -p \
+			${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/REPORTS/BARCODE_SUMMARY/ \
 			${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/REPORTS/DEMUX/${FCID} \
 			${CORE_PATH}/${PROJECT}/DEMUX_UMAP/BARCODES/${FCID}/{BARCODES,RG_UMAP_BAMS} \
 			${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/FCID_FILES/${FCID} \
@@ -216,27 +235,6 @@
 # Run ExtractIlluminaBarcodes followed immediately by IlluminaBasecallsToSam #################
 # These are based on the sample sheet format output by Illumina Experiment Manager ###########
 ##############################################################################################
-
-# # Function to create QSUB command that will run wrapper for FGBIO: ExtractBasecallingParamsForPicard
-
-# 	EXTRACT_PARAMS_4_PICARD ()
-# 	{
-# 		echo \
-# 		qsub \
-# 			${STANDARD_QSUB_ARGS} \
-# 		-N EXTRACT_PARAMS_4_PICARD_${SEQ_PROJECT}_${FCID}_${LANE} \
-# 			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-EXTRACT_PARAMS_4_PICARD.log \
-# 		${SCRIPT_DIR}/EXTRACT_PARAMS_4_PICARD.sh \
-# 			${UMI_CONTAINER} \
-# 			${CORE_PATH} \
-# 			${SEQ_PROJECT} \
-# 			${LANE} \
-# 			${SAMPLE_SHEET} \
-# 			${SUBMIT_STAMP} \
-# 			${READ_STRUCTURE} \
-# 			${FCID} \
-# 			${IEM_SAMPLE_SHEET}
-# 	}
 
 # Function to create library_params.${LANE}.txt and barcode_params.${LANE}.txt
 
@@ -284,9 +282,9 @@
 			${EXTRACT_BARCODES_QSUB_ARGS} \
 			-l excl=true \
 			-R y \
-		-N D.XTRACT.BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
-			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-D.XTRACT.BARCODES.log \
-		${SCRIPT_DIR}/D.XTRACT.BARCODES.sh \
+		-N A01-EXTRACT_BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
+			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-EXTRACT_BARCODES.log \
+		${SCRIPT_DIR}/A01-EXTRACT_BARCODES.sh \
 			${UMI_CONTAINER} \
 			${CORE_PATH} \
 			${RUN_FOLDER} \
@@ -295,7 +293,32 @@
 			${SAMPLE_SHEET} \
 			${SUBMIT_STAMP} \
 			${READ_STRUCTURE} \
-			${FCID}
+			${FCID} \
+			${MISMATCHES_ALLOWED} \
+			${NO_CALLS_ALLOWED}
+	}
+
+# SUMMARIZE BARCODES
+
+	SUMMARIZE_BARCODES ()
+	{
+		echo \
+		qsub \
+			${EXTRACT_BARCODES_QSUB_ARGS} \
+		-N A01-A01-SUMMARIZE_BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
+			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-SUMMARIZE_BARCODES.log \
+			-hold_jid A01-EXTRACT_BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
+		${SCRIPT_DIR}/A01-A01-SUMMARIZE_BARCODES.sh \
+			${UMI_CONTAINER} \
+			${CORE_PATH} \
+			${RUN_FOLDER} \
+			${SEQ_PROJECT} \
+			${LANE} \
+			${SAMPLE_SHEET} \
+			${SUBMIT_STAMP} \
+			${FCID} \
+			${MISMATCHES_ALLOWED} \
+			${NO_CALLS_ALLOWED}
 	}
 
 #Function to create QSUB commands to run Picard's IlluminaBasecallsToSam
@@ -312,7 +335,7 @@
 			-M ${SEND_TO} \
 		-N E.BCL2SAM_${SEQ_PROJECT}_${FCID}_${LANE} \
 			-o ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${FCID}_${LANE}-E.BCL2SAM.log \
-		-hold_jid D.XTRACT.BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
+		-hold_jid A01-EXTRACT_BARCODES_${SEQ_PROJECT}_${FCID}_${LANE} \
 		${SCRIPT_DIR}/E.BCL2SAM.sh \
 			${UMI_CONTAINER} \
 			${CORE_PATH} \
@@ -336,9 +359,12 @@
 		# EXTRACT_PARAMS_4_PICARD
 		CREATE_PARAMS
 		DEMUX_BARCODES
+		sleep 0.1s
+		SUMMARIZE_BARCODES
+		sleep 0.1s
 		DEMUX_BCL2SAM
-		echo \
-		>| ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
+		sleep 0.1s
+		echo >| ${CORE_PATH}/${SEQ_PROJECT}/DEMUX_UMAP/LOGS/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.csv
 	}
 
 # For each unique lane identified in the CSS style sample sheet, call the DEMUX_PROJECT_LANE function
