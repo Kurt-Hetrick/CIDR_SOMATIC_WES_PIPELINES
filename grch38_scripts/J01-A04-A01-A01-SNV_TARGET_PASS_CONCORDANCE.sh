@@ -108,6 +108,27 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 ##### IF A FINAL REPORT IS FOUND THEN RUN CONCORDANCE #####
 ###########################################################
 
+# grab the file name for the final report
+
+	FINAL_REPORT_FILENAME=$(basename ${FINAL_REPORT})
+
+# find out what row where the header is...this is not the most robust way of doing this, but I'm doing this for now
+
+	FINAL_REPORT_HEADER_ROW=$(grep -n "^SNP Name" ${FINAL_REPORT} | cut -f 1 -d ":")
+
+# remove carriage on final report
+
+	dos2unix -n ${FINAL_REPORT} ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${FINAL_REPORT_FILENAME}
+
+# remove any record where the chromosome contains an underscore (typically alternate haplotypes, b/c cidrseqsuite can't handle them
+
+	head -n ${FINAL_REPORT_HEADER_ROW} ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${FINAL_REPORT_FILENAME} \
+	>| ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/"NoAlts"_${FINAL_REPORT_FILENAME}
+
+	awk 'NR>'${FINAL_REPORT_HEADER_ROW}'' ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${FINAL_REPORT_FILENAME} \
+	| awk 'BEGIN {FS=",";OFS=","} $2!~"_" {print $0}' \
+	>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/"NoAlts"_${FINAL_REPORT_FILENAME}
+
 # -single_sample_concordance
 # Performs concordance between one vcf file and one final report. The vcf must be single sample.
 
@@ -116,7 +137,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 		CMD=${CMD}" -single_sample_concordance"
 		# [1] path_to_vcf_file
 		CMD=${CMD}" ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}_QC_OnTarget_SNV.hg19.vcf"
-		CMD=${CMD}" ${FINAL_REPORT}"
+		# [2] path to the final report
+		CMD=${CMD}" ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/"NoAlts"_${FINAL_REPORT_FILENAME}"
 		# [3] path_to_bed_file
 		CMD=${CMD}" ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.lift.hg19.bed"
 		# [4] path_to_liftover_file
