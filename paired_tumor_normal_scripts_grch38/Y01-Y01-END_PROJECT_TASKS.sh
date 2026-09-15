@@ -530,7 +530,7 @@
 					{print $1}' \
 				${CORE_PATH}/${SEQ_PROJECT}/TEMP/${QC_REPORT_NAME}_${SUBMIT_STAMP}_ERRORS.txt
 				| sort \
-				| uniq);
+				| uniq)
 		do
 			awk '$1=="'${sample}'" \
 				{print $0 "\n" "\n"}' \
@@ -541,7 +541,7 @@
 
 		sleep 2s
 
-		mail -s "FAILED JOBS: ${QC_REPORT_NAME} FOR ${SEQ_PROJECT} has finished processing CIDR_SOMATIC_CAPTURE_SUBMITTER_GRCH38.sh" \
+		mail -s "FAILED JOBS: ${QC_REPORT_NAME} FOR ${SEQ_PROJECT} has finished processing CIDR_NGS_CAPTURE_PAIRED_TUMOR_NORMAL_SUBMITTER_GRCH38.sh" \
 			${SEND_TO} \
 		< ${CORE_PATH}/${SEQ_PROJECT}/TEMP/${QC_REPORT_NAME}_${SUBMIT_STAMP}_EMAIL_SUMMARY.txt
 	fi
