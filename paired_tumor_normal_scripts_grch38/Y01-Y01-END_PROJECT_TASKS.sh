@@ -528,9 +528,9 @@
 		for sample in $(awk 'BEGIN {OFS="\t"} \
 					NF==6 \
 					{print $1}' \
-				${CORE_PATH}/${SEQ_PROJECT}/TEMP/${QC_REPORT_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+				${CORE_PATH}/${SEQ_PROJECT}/TEMP/${QC_REPORT_NAME}_${SUBMIT_STAMP}_ERRORS.txt \
 				| sort \
-				| uniq)
+				| uniq);
 		do
 			awk '$1=="'${sample}'" \
 				{print $0 "\n" "\n"}' \
