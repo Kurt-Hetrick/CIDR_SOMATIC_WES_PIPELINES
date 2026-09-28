@@ -638,78 +638,88 @@
 			${SUBMIT_STAMP}
 	}
 
-#############################################################################################
-# MAFSMITH ##################################################################################
-# ALTERNATIVE TO FUNCOTATOR BECAUSE IT DOES WORK ON ALL VARIANTS. OR AT LEAST DOESN'T CRASH #
-#############################################################################################
+# #############################################################################################
+# # MAFSMITH ##################################################################################
+# # ALTERNATIVE TO FUNCOTATOR BECAUSE IT DOES WORK ON ALL VARIANTS. OR AT LEAST DOESN'T CRASH #
+# #############################################################################################
+############# NOTE: THIS PROGRAM IS TRASH. REMOVING IT. GOOD RIDDANCE. ########################
+###############################################################################################
 
-	MAFSMITH_ALL ()
-	{
-		echo \
-		qsub \
-			${STD_QUEUE_QSUB_ARGS} \
-		-N E04-MAFSMITH_ALL_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
-			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MAFSMITH_ALL.log \
-		-hold_jid D01-FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
-		${COMMON_SCRIPT_DIR}/E04-MAFSMITH_ALL.sh \
-			${MAFSMITH_CONTAINER} \
-			${QC_REPORT} \
-			${CORE_PATH} \
-			${TUMOR_PROJECT} \
-			${TUMOR_INDIVIDUAL} \
-			${TUMOR_SM_TAG} \
-			${NORMAL_SM_TAG} \
-			${SUBMIT_STAMP}
-	}
+# 	MAFSMITH_ALL ()
+# 	{
+# 		echo \
+# 		qsub \
+# 			${STD_QUEUE_QSUB_ARGS} \
+# 			-pe slots 3 \
+# 		-N E04-MAFSMITH_ALL_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
+# 			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MAFSMITH_ALL.log \
+# 		-hold_jid D01-FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
+# 		${COMMON_SCRIPT_DIR}/E04-MAFSMITH_ALL.sh \
+# 			${MAFSMITH_CONTAINER} \
+# 			${QC_REPORT} \
+# 			${CORE_PATH} \
+# 			${TUMOR_PROJECT} \
+# 			${TUMOR_INDIVIDUAL} \
+# 			${TUMOR_SM_TAG} \
+# 			${NORMAL_SM_TAG} \
+# 			${SUBMIT_STAMP}
+# 	}
 
-##########################################################
-# SELECT PASSING VARIANTS ################################
-# PRECURSOR TO RUNNING MAFSMITH ONLY ON PASSING VARIANTS #
-##########################################################
+# 		# fun fact: fastvep, which mafsmith uses, used 10 cpu threads and there is no way to configure it and it's not mentioned in mafsmith at all.
+# 		# that's why -pe slots 3 is added to qsub. 1 job slot in cluster assumes that you are using up to 4 cores.
 
-	SELECT_VARIANTS_PASS ()
-	{
-		echo \
-		qsub \
-			${STD_QUEUE_QSUB_ARGS} \
-		-N E05-SELECT_VARIANTS_PASS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
-			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_SELECT_VARIANTS_PASS.log \
-		-hold_jid D01-FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
-		${COMMON_SCRIPT_DIR}/E05-SELECT_VARIANTS_PASS.sh \
-			${ALIGNMENT_CONTAINER} \
-			${QC_REPORT} \
-			${CORE_PATH} \
-			${REF_GENOME} \
-			${TUMOR_PROJECT} \
-			${TUMOR_INDIVIDUAL} \
-			${TUMOR_SM_TAG} \
-			${NORMAL_SM_TAG} \
-			${SUBMIT_STAMP}
-	}
+# ##########################################################
+# # SELECT PASSING VARIANTS ################################
+# # PRECURSOR TO RUNNING MAFSMITH ONLY ON PASSING VARIANTS #
+# ##########################################################
 
-	#############################################################################################
-	# MAFSMITH ON PASS VARIANTS #################################################################
-	# ALTERNATIVE TO FUNCOTATOR BECAUSE IT DOES WORK ON ALL VARIANTS. OR AT LEAST DOESN'T CRASH #
-	#############################################################################################
+# 	SELECT_VARIANTS_PASS ()
+# 	{
+# 		echo \
+# 		qsub \
+# 			${STD_QUEUE_QSUB_ARGS} \
+# 		-N E05-SELECT_VARIANTS_PASS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
+# 			-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_SELECT_VARIANTS_PASS.log \
+# 		-hold_jid D01-FILTER_MUTECT2_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
+# 		${COMMON_SCRIPT_DIR}/E05-SELECT_VARIANTS_PASS.sh \
+# 			${ALIGNMENT_CONTAINER} \
+# 			${QC_REPORT} \
+# 			${CORE_PATH} \
+# 			${REF_GENOME} \
+# 			${TUMOR_PROJECT} \
+# 			${TUMOR_INDIVIDUAL} \
+# 			${TUMOR_SM_TAG} \
+# 			${NORMAL_SM_TAG} \
+# 			${SUBMIT_STAMP}
+# 	}
 
-		MAFSMITH_PASS ()
-		{
-			echo \
-			qsub \
-				${STD_QUEUE_QSUB_ARGS} \
-			-N E05-A01-MAFSMITH_PASS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
-				-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MAFSMITH_PASS.log \
-			-hold_jid E05-SELECT_VARIANTS_PASS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
-			${COMMON_SCRIPT_DIR}/E05-A01-MAFSMITH_PASS.sh \
-				${MAFSMITH_CONTAINER} \
-				${QC_REPORT} \
-				${CORE_PATH} \
-				${TUMOR_PROJECT} \
-				${TUMOR_INDIVIDUAL} \
-				${TUMOR_SM_TAG} \
-				${NORMAL_SM_TAG} \
-				${SUBMIT_STAMP}
-		}
+# 	#############################################################################################
+# 	# MAFSMITH ON PASS VARIANTS #################################################################
+# 	# ALTERNATIVE TO FUNCOTATOR BECAUSE IT DOES WORK ON ALL VARIANTS. OR AT LEAST DOESN'T CRASH #
+# 	#############################################################################################
+
+# 		MAFSMITH_PASS ()
+# 		{
+# 			echo \
+# 			qsub \
+# 				${STD_QUEUE_QSUB_ARGS} \
+# 				-pe slots 3 \
+# 			-N E05-A01-MAFSMITH_PASS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
+# 				-o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_MAFSMITH_PASS.log \
+# 			-hold_jid E05-SELECT_VARIANTS_PASS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
+# 			${COMMON_SCRIPT_DIR}/E05-A01-MAFSMITH_PASS.sh \
+# 				${MAFSMITH_CONTAINER} \
+# 				${QC_REPORT} \
+# 				${CORE_PATH} \
+# 				${TUMOR_PROJECT} \
+# 				${TUMOR_INDIVIDUAL} \
+# 				${TUMOR_SM_TAG} \
+# 				${NORMAL_SM_TAG} \
+# 				${SUBMIT_STAMP}
+# 		}
+
+# 			# fun fact: fastvep, which mafsmith uses, used 10 cpu threads and there is no way to configure it and it's not mentioned in mafsmith at all.
+# 			# that's why -pe slots 3 is added to qsub. 1 job slot in cluster assumes that you are using up to 4 cores.
 
 ###############################################################################################
 # GENERATE QC REPORT STUB FOR SAMPLE ##########################################################
@@ -726,9 +736,7 @@ ${STD_QUEUE_QSUB_ARGS} \
 B01-CONCORDANCE_HAPLOTYPE_CALLER_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT},\
 E01-VCF_MUTECT2_METRICS_BAIT_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT},\
 E02-VCF_MUTECT2_METRICS_TARGET_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT},\
-E03-FUNCOTATOR_MAF_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT},\
-E04-MAFSMITH_ALL_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT},\
-E05-A01-MAFSMITH_PASS_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
+E03-FUNCOTATOR_MAF_${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_${TUMOR_PROJECT} \
 -o ${CORE_PATH}/${TUMOR_PROJECT}/LOGS/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}-QC_REPORT_PREP_QC.log \
 ${COMMON_SCRIPT_DIR}/Y01-QC_REPORT_PREP.sh \
 ${ALIGNMENT_CONTAINER} \
@@ -798,12 +806,12 @@ ${SUBMIT_STAMP}
 			echo sleep 0.1s
 			FUNCOTATOR_MAF
 			echo sleep 0.1s
-			MAFSMITH_ALL
-			echo sleep 0.1s
-			SELECT_VARIANTS_PASS
-			echo sleep 0.1s
-			MAFSMITH_PASS
-			echo sleep 0.1s
+			# MAFSMITH_ALL
+			# echo sleep 0.1s
+			# SELECT_VARIANTS_PASS
+			# echo sleep 0.1s
+			# MAFSMITH_PASS
+			# echo sleep 0.1s
 			QC_REPORT_PREP
 			echo sleep 0.1s
 	done

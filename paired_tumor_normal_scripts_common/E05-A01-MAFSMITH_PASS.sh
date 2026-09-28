@@ -40,13 +40,15 @@ START_MAFSMITH_PASS_MAF=$(date '+%s') # capture time process starts for wall clo
 
 	# construct command line
 
-		CMD="singularity exec ${MAFSMITH_CONTAINER} mafsmith"
-			CMD=${CMD}" vcf2maf"
-				CMD=${CMD}" --input-vcf ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_QC_PASS.vcf"
-				CMD=${CMD}" --vcf-tumor-id ${TUMOR_SM_TAG}"
-				CMD=${CMD}" --tumor-id ${TUMOR_SM_TAG}"
-				CMD=${CMD}" --vcf-normal-id ${NORMAL_SM_TAG}"
-				CMD=${CMD}" --normal-id ${NORMAL_SM_TAG}"
+		CMD="singularity exec"
+			CMD=${CMD}" --env MAFSMITH_HOME=/data/mafsmith"
+			CMD=${CMD}" ${MAFSMITH_CONTAINER} mafsmith"
+		CMD=${CMD}" vcf2maf"
+			CMD=${CMD}" --input-vcf ${CORE_PATH}/${TUMOR_PROJECT}/TEMP/${QC_REPORT_NAME}/${TUMOR_INDIVIDUAL}/${TUMOR_INDIVIDUAL}_${TUMOR_SM_TAG}_${NORMAL_SM_TAG}_QC_PASS.vcf"
+			CMD=${CMD}" --vcf-tumor-id ${TUMOR_SM_TAG}"
+			CMD=${CMD}" --tumor-id ${TUMOR_SM_TAG}"
+			CMD=${CMD}" --vcf-normal-id ${NORMAL_SM_TAG}"
+			CMD=${CMD}" --normal-id ${NORMAL_SM_TAG}"
 		CMD=${CMD}" --output-maf ${CORE_PATH}/${TUMOR_PROJECT}/REPORTS/MAFSMITH/${TUMOR_INDIVIDUAL}_${NORMAL_SM_TAG}_${TUMOR_SM_TAG}_MAFSMITH_PASS.maf"
 
 	# write command line to file and execute the command line
